@@ -18,16 +18,9 @@ public class Renderer implements GLSurfaceView.Renderer {
     private float[] mViewMatrix = new float[16];
     private float[] mProjectionMatrix = new float[16];
     private float[] mMVPMatrix = new float[16];
-    private float[] mColor = new float[4];
 
-    private final int mBytesPerFloat = 4;
-    private final int mBytesPerShort = 2;
-    private final int mStrideBytes = 3 * mBytesPerFloat;
-    private final int mPositionOffset = 0;
-    private final int mPositionDataSize = 3;
-    private final int mNormalDataSize = 3;
-    private final int mColorOffset = 3;
-    private final int mColorDataSize = 4;
+    static final int mBytesPerFloat = 4;
+    static final int mBytesPerShort = 2;
 
     private int[] sphereVao = new int[1];
     private FloatBuffer sphereVertexBuffer;
@@ -40,6 +33,10 @@ public class Renderer implements GLSurfaceView.Renderer {
     double dAngle = 1.0;
 
     Shader shader;
+    Model sphere1;
+    Model sphere2;
+    Model sphere3;
+
 
     public Renderer() {
     }
@@ -84,7 +81,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         // Position the eye behind the origin.
         final float eyeX = 0.0f;
         final float eyeY = 0.0f;
-        final float eyeZ = 1.5f;
+        final float eyeZ = 2.5f;
 
         // We are looking toward the distance
         final float lookX = 0.0f;
@@ -104,7 +101,10 @@ public class Renderer implements GLSurfaceView.Renderer {
         //setupShaders();
         shader = new Shader();
         shader.use();
-        setupBuffers();
+        //setupBuffers();
+        sphere1 = new SphereModel(shader, 1);
+        sphere2 = new SphereModel(shader, 2);
+        sphere3 = new SphereModel(shader, 3);
 
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
@@ -123,9 +123,21 @@ public class Renderer implements GLSurfaceView.Renderer {
         final float bottom = -1.0f;
         final float top = 1.0f;
         final float near = 1.0f;
-        final float far = 100.0f;
+        final float far = 1000.0f;
 
-        Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
+        //Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
+        Matrix.orthoM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
+    }
+
+    private static void getNormalMatrix(float[] model4, float[] normal3) {
+        // Create normal matrix
+        final float[] inverseMatrix = new float[9];
+        final float[] model3 = new float[9];
+
+        Utils.mat3(model4, model3);
+        Utils.inverse(model3, inverseMatrix);
+        Utils.transpose(inverseMatrix, normal3);
+        Utils.normalize(normal3);
     }
 
     @Override
@@ -134,49 +146,53 @@ public class Renderer implements GLSurfaceView.Renderer {
         // Draw the triangle facing straight on.
         Matrix.setIdentityM(mModelMatrix, 0);
         final float[] lightDir = new float[] {0, 0, -1};
+        final float[] normalMatrix = new float[9];
+        final Utils.vect3 r = new Utils.vect3(1,1,1).normalize();
+        final Utils.vect3 s = new Utils.vect3(0.5f,0.2f,0.3f);
+        shader.setLight(lightDir);
 
-        int stride = (3 + 3) * mBytesPerFloat;
-        int offset = 0;
+        double x = 0.5;
+        double z = 0.5;
+        double a = Math.atan2(z, x) * 180 / Math.PI;
 
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0]);
+        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.translateM(mModelMatrix, 0, 0, 0.5f, -20);
+        Matrix.rotateM(mModelMatrix, 0, (float)angle, r.x, r.y, r.z);
+        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
+        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
+        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+        // Create normal matrix
+        getNormalMatrix(mModelMatrix, normalMatrix);
+        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
+        sphere1.draw();
 
-        GLES20.glEnableVertexAttribArray(shader.mPositionHandle);
-        GLES20.glVertexAttribPointer(shader.mPositionHandle, 3, GLES20.GL_FLOAT, false,
-                stride, offset);
+        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.translateM(mModelMatrix, 0, 0, 0, -20);
+        Matrix.rotateM(mModelMatrix, 0, (float)angle, r.x, r.y, r.z);
+        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
+        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
+        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+        // Create normal matrix
+        getNormalMatrix(mModelMatrix, normalMatrix);
+        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
+        sphere2.draw();
 
-        offset += 3 * mBytesPerFloat;
+        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.translateM(mModelMatrix, 0, 0, -0.5f, -20);
+        Matrix.rotateM(mModelMatrix, 0, (float)angle, r.x, r.y, r.z);
+        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
+        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
+        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+        // Create normal matrix
+        getNormalMatrix(mModelMatrix, normalMatrix);
+        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
+        sphere3.draw();
 
-        GLES20.glVertexAttribPointer(shader.mNormalHandle, 3, GLES20.GL_FLOAT, false,
-                stride, offset);
-        GLES20.glEnableVertexAttribArray(shader.mNormalHandle);
-
-        Matrix.translateM(mModelMatrix, 0, 0, 0, -2);
-        Matrix.rotateM(mModelMatrix, 0, (float)angle, 1, 0, 0);
         angle += dAngle;
         if(angle >= 360)
             angle = angle - 360;
-
-        Matrix.rotateM(mModelMatrix, 0, (float)90, 0, 0, 1);
-        //Matrix.rotateM(mModelMatrix, 0, (float)-90, 0, 0, 1);
-
-
-        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
-
-        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
-
-        Matrix.invertM(mModelMatrix, 0, mModelMatrix, 0);
-        Matrix.transposeM(mModelMatrix, 0, mModelMatrix, 0);
-
-        GLES20.glUniformMatrix4fv(shader.mModelMatrixHandle, 1, false, mModelViewMatrix, 0);
-        shader.setLight(lightDir);
-
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, sphereIndicesBuffer.capacity(), GLES20.GL_UNSIGNED_SHORT, 0);
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
-
-        GLES20.glDisableVertexAttribArray(shader.mPositionHandle);
-        GLES20.glDisableVertexAttribArray(shader.mNormalHandle);
     }
 }

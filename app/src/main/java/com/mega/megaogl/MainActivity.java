@@ -26,10 +26,12 @@ import android.view.MenuItem;
 public class MainActivity extends Activity {
 
     private GLSurfaceView glSurfaceView;
+    public static Context appContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        appContext = getApplicationContext();
         glSurfaceView = new GLSurfaceView(this);
 
         final ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
