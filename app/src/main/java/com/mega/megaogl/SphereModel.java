@@ -5,6 +5,9 @@ import android.opengl.GLES20;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static android.opengl.GLES20.GL_TEXTURE_2D;
+import static javax.microedition.khronos.opengles.GL10.GL_TEXTURE0;
+
 public class SphereModel extends Model{
 
     Texture earth;
@@ -18,6 +21,7 @@ public class SphereModel extends Model{
         float[][] vertices = new float[1][];
         short[][] indices = new short[1][];
         Utils.CalcSphere(vertices, indices, level);
+        //Utils.CalcRect(vertices, indices);
 
         vertexBuffer = ByteBuffer.allocateDirect(vertices[0].length * Renderer.mBytesPerFloat)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -48,16 +52,31 @@ public class SphereModel extends Model{
         GLES20.glVertexAttribPointer(shader.mPositionHandle, 3, GLES20.GL_FLOAT, false,
                 stride, offset);
         offset += 3 * Renderer.mBytesPerFloat;
+
         GLES20.glVertexAttribPointer(shader.mNormalHandle, 3, GLES20.GL_FLOAT, false,
                 stride, offset);
         GLES20.glEnableVertexAttribArray(shader.mNormalHandle);
 
+        // Texture
+        offset += 3 * Renderer.mBytesPerFloat;
+
+        GLES20.glActiveTexture(GL_TEXTURE0);
+        GLES20.glBindTexture(GL_TEXTURE_2D, earth.textureIds[0]);
+        GLES20.glUniform1i(shader.mTextureHandle, 0);
+
+        GLES20.glVertexAttribPointer(shader.mTextureHandle, 2, GLES20.GL_FLOAT, false,
+                stride, offset);
+        GLES20.glEnableVertexAttribArray(shader.mTextureHandle);
+
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indicesBuffer.capacity(), GLES20.GL_UNSIGNED_SHORT, 0);
+        //offset = indicesBuffer.capacity() - 6;
+        //GLES20.glDrawElements(GLES20.GL_TRIANGLES, 6, GLES20.GL_UNSIGNED_SHORT, offset * 2);
 
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
         GLES20.glDisableVertexAttribArray(shader.mPositionHandle);
         GLES20.glDisableVertexAttribArray(shader.mNormalHandle);
+        GLES20.glDisableVertexAttribArray(shader.mTextureHandle);
     }
 }

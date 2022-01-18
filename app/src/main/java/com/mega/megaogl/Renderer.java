@@ -30,7 +30,7 @@ public class Renderer implements GLSurfaceView.Renderer {
     final int[] ibo = new int[] {0};
     int err = 0;
     double angle = 0;
-    double dAngle = 1.0;
+    double dAngle = 0.5;
 
     Shader shader;
     Model sphere1;
@@ -39,38 +39,6 @@ public class Renderer implements GLSurfaceView.Renderer {
 
 
     public Renderer() {
-    }
-
-    void setupBuffers() {
-        // Create Sphere
-        float[][] vertices = new float[1][];
-        short[][] indices = new short[1][];
-        Utils.CalcSphere(vertices, indices, 3);
-
-        //Utils.CalcRect1(vertices, indices);
-
-        sphereVertexBuffer = ByteBuffer.allocateDirect(vertices[0].length * mBytesPerFloat)
-                .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        sphereVertexBuffer.put(vertices[0]).position(0);
-
-        sphereIndicesBuffer = ByteBuffer.allocateDirect(indices[0].length * mBytesPerShort)
-                .order(ByteOrder.nativeOrder()).asShortBuffer();
-        sphereIndicesBuffer.put(indices[0]).position(0);
-
-        err = GLES20.glGetError();
-        GLES20.glGenBuffers(1, vbo, 0);
-        GLES20.glGenBuffers(1, ibo, 0);
-
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0]);
-        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, sphereVertexBuffer.capacity()
-                * mBytesPerFloat, sphereVertexBuffer, GLES20.GL_STATIC_DRAW);
-
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
-        GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer.capacity()
-                * mBytesPerShort, sphereIndicesBuffer, GLES20.GL_STATIC_DRAW);
-
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     @Override
@@ -102,9 +70,9 @@ public class Renderer implements GLSurfaceView.Renderer {
         shader = new Shader();
         shader.use();
         //setupBuffers();
-        sphere1 = new SphereModel(shader, 1);
-        sphere2 = new SphereModel(shader, 2);
-        sphere3 = new SphereModel(shader, 3);
+        sphere1 = new SphereModel(shader, 3);
+        //sphere2 = new SphereModel(shader, 2);
+        //sphere3 = new SphereModel(shader, 3);
 
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
@@ -147,8 +115,9 @@ public class Renderer implements GLSurfaceView.Renderer {
         Matrix.setIdentityM(mModelMatrix, 0);
         final float[] lightDir = new float[] {0, 0, -1};
         final float[] normalMatrix = new float[9];
-        final Utils.vect3 r = new Utils.vect3(1,1,1).normalize();
-        final Utils.vect3 s = new Utils.vect3(0.5f,0.2f,0.3f);
+        final Utils.vect3 r = new Utils.vect3(0,1,0).normalize();
+        final Utils.vect3 r1 = new Utils.vect3(1,0,0).normalize();
+        final Utils.vect3 s = new Utils.vect3(0.5f,0.5f,0.5f);
         shader.setLight(lightDir);
 
         double x = 0.5;
@@ -156,7 +125,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         double a = Math.atan2(z, x) * 180 / Math.PI;
 
         Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.translateM(mModelMatrix, 0, 0, 0.5f, -20);
+        Matrix.translateM(mModelMatrix, 0, 0, 0.5f, 0);
         Matrix.rotateM(mModelMatrix, 0, (float)angle, r.x, r.y, r.z);
         Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
         Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
@@ -166,7 +135,18 @@ public class Renderer implements GLSurfaceView.Renderer {
         getNormalMatrix(mModelMatrix, normalMatrix);
         GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
         sphere1.draw();
-
+        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.translateM(mModelMatrix, 0, 0, -0.5f, 0);
+        Matrix.rotateM(mModelMatrix, 0, (float)angle, r1.x, r1.y, r1.z);
+        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
+        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
+        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+        // Create normal matrix
+        getNormalMatrix(mModelMatrix, normalMatrix);
+        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
+        sphere1.draw();
+/*
         Matrix.setIdentityM(mModelMatrix, 0);
         Matrix.translateM(mModelMatrix, 0, 0, 0, -20);
         Matrix.rotateM(mModelMatrix, 0, (float)angle, r.x, r.y, r.z);
@@ -190,7 +170,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         getNormalMatrix(mModelMatrix, normalMatrix);
         GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
         sphere3.draw();
-
+*/
         angle += dAngle;
         if(angle >= 360)
             angle = angle - 360;

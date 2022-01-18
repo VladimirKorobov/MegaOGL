@@ -7,6 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Utils {
+    public enum Face {
+        front,
+        right,
+        back,
+        left,
+        top,
+        bottom
+    }
     static class vect2 {
         public float x, y;
         public vect2() {}
@@ -157,15 +165,16 @@ public class Utils {
         edge edge1;
         edge edge2;
         edge edge3;
-        short index0;
-        short index1;
-        short index2;
-        short index3;
+        public short index0;
+        public short index1;
+        public short index2;
+        public short index3;
         vect2 tex = new vect2();
         List<Float> vertices;
         List<Short> indices;
         List<Float> texCoord;
-        public face4(edge edge0, edge edge1, edge edge2, edge edge3,
+        public Utils.Face quater;
+        public face4(Utils.Face quater, edge edge0, edge edge1, edge edge2, edge edge3,
                      short index0, short index1, short index2, short index3,
                      List<Float> vertices, List<Short> indices, List<Float> texCoord,
                      int level) {
@@ -180,6 +189,7 @@ public class Utils {
             this.vertices = vertices;
             this.indices = indices;
             this.texCoord = texCoord;
+            this.quater = quater;
         }
 
         private short addVertexToCenter(int level) {
@@ -193,7 +203,7 @@ public class Utils {
             short lastIndex = (short)(vertices.size() / 3);
             // add vertex
             vertices.add(newVert.x); vertices.add(newVert.y); vertices.add(newVert.z);
-            Texture.getCoord3D(newVert, tex);
+            Texture.getCoord3D(newVert, tex, quater);
             texCoord.add(tex.x); texCoord.add(tex.y);
 
             if(level == 1) {
@@ -235,7 +245,7 @@ public class Utils {
                 vertices.add(v.x);
                 vertices.add(v.y);
                 vertices.add(v.z);
-                Texture.getCoord3D(v, tex);
+                Texture.getCoord3D(v, tex,quater);
                 texCoord.add(tex.x); texCoord.add(tex.y);
             }
         }
@@ -257,22 +267,22 @@ public class Utils {
                 // Create four new faces
                 edge tempEdge0 = edge0.indexStart == index0 ? edge0.childEdge0 : edge0.childEdge1;
                 edge tempEdge1 = edge3.indexStart == index0 ? edge3.childEdge0 : edge3.childEdge1;
-                face4 f0 = new face4(tempEdge0, newEdge0, newEdge3, tempEdge1,
+                face4 f0 = new face4(quater, tempEdge0, newEdge0, newEdge3, tempEdge1,
                         index0, edge0.indexMiddle, newIndex, edge3.indexMiddle,
                         vertices, indices, texCoord, level);
                 tempEdge0 = edge0.indexStart == index1 ? edge0.childEdge0 : edge0.childEdge1;
                 tempEdge1 = edge1.indexStart == index1 ? edge1.childEdge0 : edge1.childEdge1;
-                face4 f1 = new face4(tempEdge0, tempEdge1, newEdge1, newEdge0,
+                face4 f1 = new face4(quater, tempEdge0, tempEdge1, newEdge1, newEdge0,
                         edge0.indexMiddle, index1, edge1.indexMiddle, newIndex,
                         vertices, indices, texCoord, level);
                 tempEdge0 = edge1.indexStart == index2 ? edge1.childEdge0 : edge1.childEdge1;
                 tempEdge1 = edge2.indexStart == index2 ? edge2.childEdge0 : edge2.childEdge1;
-                face4 f2 = new face4(tempEdge0, tempEdge1, newEdge2, newEdge1,
+                face4 f2 = new face4(quater, tempEdge0, tempEdge1, newEdge2, newEdge1,
                         edge1.indexMiddle, index2, edge2.indexMiddle, newIndex,
                         vertices, indices, texCoord, level);
                 tempEdge0 = edge2.indexStart == index3 ? edge2.childEdge0 : edge2.childEdge1;
                 tempEdge1 = edge3.indexStart == index3 ? edge3.childEdge0 : edge3.childEdge1;
-                face4 f3 = new face4(tempEdge0, tempEdge1, newEdge3, newEdge2,
+                face4 f3 = new face4(quater, tempEdge0, tempEdge1, newEdge3, newEdge2,
                         edge2.indexMiddle, index3, edge3.indexMiddle, newIndex,
                         vertices, indices, texCoord, level);
 
@@ -521,32 +531,70 @@ public class Utils {
 
     public static void CalcRect(float[][] vertices, short[][] indices)
     {
-        vertices[0] = new float[12 * 2];
+        float[] v = {
+                -1,  1, 0,   0, 0,
+                -1, -1, 0,   0, 1,
+                1, -1, 0,   1, 1,
+                1,  1, 0,   1, 0,
+
+        };
+
+        short[] i = {
+                3,0,1,1,2,3
+        };
+
+        vertices[0] = v;
+        indices[0] = i;
+
+
+        /*
+        vertices[0] = new float[4 * (3 + 2)];
         indices[0] = new short[6];
 
         vertices[0][0] = -0.5f;
-        vertices[0][1] = -0.5f;
+        vertices[0][1] = 0.5f;
         vertices[0][2] = 0;
+        vertices[0][3] = 0.0f;
+        vertices[0][4] = 0.0f;
+        vertices[0][5] = 1.0f;
+        vertices[0][6] = 0.0f;
+        vertices[0][7] = 1.0f;
 
-        vertices[0][6] = -0.5f;
-        vertices[0][7] = 0.5f;
-        vertices[0][8] = 0;
+        vertices[0][8] = -0.5f;
+        vertices[0][9] = -0.5f;
+        vertices[0][10] = 0;
+        vertices[0][11] = 0.0f;
+        vertices[0][12] = 0.0f;
+        vertices[0][13] = 1.0f;
+        vertices[0][14] = 0.0f;
+        vertices[0][15] = 0.0f;
 
-        vertices[0][12] = 0.5f;
-        vertices[0][13] = 0.5f;
-        vertices[0][14] = 0;
+        vertices[0][16] = 0.5f;
+        vertices[0][17] = -0.5f;
+        vertices[0][18] = 0;
+        vertices[0][19] = 0.0f;
+        vertices[0][20] = 0.0f;
+        vertices[0][21] = 1.0f;
+        vertices[0][22] = 1f;
+        vertices[0][23] = 0f;
 
-        vertices[0][18] = 0.5f;
-        vertices[0][19] = -0.5f;
-        vertices[0][20] = 0;
+        vertices[0][24] = 0.5f;
+        vertices[0][25] = 0.5f;
+        vertices[0][26] = 0;
+        vertices[0][27] = 0.0f;
+        vertices[0][28] = 0.0f;
+        vertices[0][29] = 1.0f;
+        vertices[0][30] = 1f;
+        vertices[0][31] = 1f;
 
-        vertices[0][5] = vertices[0][11] = vertices[0][17] = vertices[0][23] = 1.0f;
         indices[0][0] = 0;
-        indices[0][1] = 3;
-        indices[0][2] = 1;
-        indices[0][3] = 3;
-        indices[0][4] = 2;
-        indices[0][5] = 1;
+        indices[0][1] = 2;
+        indices[0][2] = 3;
+        indices[0][3] = 0;
+        indices[0][4] = 1;
+        indices[0][5] = 2;
+        (
+         */
     }
 
     public static void CalcCube(float[][] vertices, short[][] indices) {
@@ -620,39 +668,80 @@ public class Utils {
         List<Short> indicesList =  new ArrayList<>();
         vect2 tex = new vect2();
 
-        vect3 u = new vect3();
-        u.init(-1, 1, 1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z);
-        Texture.getCoord3D(u, tex);
+        final vect3 u = new vect3(-1, 1, 1).normalize();
+        // front
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //0
+        Texture.getCoord3D(u, tex, Face.front);
         texcoordList.add(tex.x); texcoordList.add(tex.y);
+
         u.init(-1, -1, 1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z);
-        Texture.getCoord3D(u, tex);
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //1
+        Texture.getCoord3D(u, tex, Face.front);
         texcoordList.add(tex.x); texcoordList.add(tex.y);
+
         u.init(1, -1, 1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z);
-        Texture.getCoord3D(u, tex);
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //2
+        Texture.getCoord3D(u, tex, Face.front);
         texcoordList.add(tex.x); texcoordList.add(tex.y);
+
         u.init(1, 1, 1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z);
-        Texture.getCoord3D(u, tex);
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //3
+        Texture.getCoord3D(u, tex, Face.front);
+        texcoordList.add(tex.x); texcoordList.add(tex.y);
+
+        // right
+        u.init(1, 1, -1).normalize();
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //4
+        Texture.getCoord3D(u, tex, Face.right);
+        texcoordList.add(tex.x); texcoordList.add(tex.y);
+
+        u.init(1, -1, -1).normalize();
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //5
+        Texture.getCoord3D(u, tex, Face.right);
+        texcoordList.add(tex.x); texcoordList.add(tex.y);
+
+        // back
+        u.init(-1, -1, -1).normalize();
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //6
+        Texture.getCoord3D(u, tex, Face.back);
         texcoordList.add(tex.x); texcoordList.add(tex.y);
 
         u.init(-1, 1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z);
-        Texture.getCoord3D(u, tex);
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //7
+        Texture.getCoord3D(u, tex, Face.back);
         texcoordList.add(tex.x); texcoordList.add(tex.y);
+
+        //left
+        u.init(-1, 1, -1).normalize();
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //8
+        Texture.getCoord3D(u, tex, Face.left);
+        texcoordList.add(tex.x); texcoordList.add(tex.y);
+
         u.init(-1, -1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z);
-        Texture.getCoord3D(u, tex);
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //9
+        Texture.getCoord3D(u, tex, Face.left);
         texcoordList.add(tex.x); texcoordList.add(tex.y);
-        u.init(1, -1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z);
-        Texture.getCoord3D(u, tex);
+
+        //top
+        u.init(-1, 1, -1).normalize();
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //10
+        Texture.getCoord3D(u, tex, Face.top);
         texcoordList.add(tex.x); texcoordList.add(tex.y);
+
         u.init(1, 1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z);
-        Texture.getCoord3D(u, tex);
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //11
+        Texture.getCoord3D(u, tex, Face.top);
+        texcoordList.add(tex.x); texcoordList.add(tex.y);
+
+        //bottom
+        u.init(-1, -1, -1).normalize();
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //12
+        Texture.getCoord3D(u, tex, Face.bottom);
+        texcoordList.add(tex.x); texcoordList.add(tex.y);
+
+        u.init(1, -1, -1).normalize();
+        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //13
+        Texture.getCoord3D(u, tex, Face.bottom);
         texcoordList.add(tex.x); texcoordList.add(tex.y);
 
         // Create edges
@@ -660,54 +749,84 @@ public class Utils {
         edge e1 = new edge((short)1, (short)2);
         edge e2 = new edge((short)2, (short)3);
         edge e3 = new edge((short)3, (short)0);
-        edge e4 = new edge((short)4, (short)5);
-        edge e5 = new edge((short)5, (short)6);
-        edge e6 = new edge((short)6, (short)7);
-        edge e7 = new edge((short)7, (short)4);
-        edge e8 = new edge((short)0, (short)4);
-        edge e9 = new edge((short)1, (short)5);
-        edge e10 = new edge((short)2, (short)6);
-        edge e11 = new edge((short)3, (short)7);
 
+        edge e4 = new edge((short)2, (short)5);
+        edge e5 = new edge((short)5, (short)4);
+        edge e6 = new edge((short)4, (short)3);
 
-        face4 f0 = new Utils.face4( // front
+        edge e7 = new edge((short)5, (short)6);
+        edge e8 = new edge((short)6, (short)7);
+        edge e9 = new edge((short)7, (short)4);
+
+        edge e10 = new edge((short)0, (short)8);
+        edge e11 = new edge((short)8, (short)9);
+        edge e12 = new edge((short)9, (short)1);
+
+        edge e13 = new edge((short)3, (short)11);
+        edge e14 = new edge((short)11, (short)10);
+        edge e15 = new edge((short)10, (short)0);
+
+        edge e16 = new edge((short)1, (short)12);
+        edge e17 = new edge((short)12, (short)13);
+        edge e18 = new edge((short)13, (short)2);
+
+        List<face4> faces = new ArrayList<>();
+
+        face4 f = new Utils.face4( // front
+                Face.front,
                 e0, e1, e2, e3,
                 (short)0, (short)1, (short)2, (short)3,
                 vertexList, indicesList, texcoordList, level);
-
-        face4 f1 = new Utils.face4( // right
-                e2, e10, e6, e11,
-                (short)3, (short)2, (short)6, (short)7,
+        faces.add(f);
+        f = new Utils.face4( // right
+                Face.right,
+                e2, e4, e5, e6,
+                (short)3, (short)2, (short)5, (short)4,
                 vertexList, indicesList, texcoordList, level);
+        faces.add(f);
 
-
-        face4 f2 = new Utils.face4( // back
-                e6, e5, e4, e7,
-                (short)7, (short)6, (short)5, (short)4,
+        f = new Utils.face4( // back
+                Face.back,
+                e5, e7, e8, e9,
+                (short)4, (short)5, (short)6, (short)7,
                 vertexList, indicesList, texcoordList, level);
+        faces.add(f);
 
-        face4 f3 = new Utils.face4( // left
-                e8, e4, e9, e0,
-                (short)0, (short)4, (short)5, (short)1,
+        f = new Utils.face4( // left
+                Face.left,
+                e10, e11, e12, e0,
+                (short)0, (short)8, (short)9, (short)1,
                 vertexList, indicesList, texcoordList, level);
+        faces.add(f);
 
-        face4 f4 = new Utils.face4( //top
-                e3, e11, e7, e8,
-                (short)0, (short)3, (short)7, (short)4,
+        f = new Utils.face4( //top
+                Face.top,
+                e13, e14, e15, e3,
+                (short)3, (short)11, (short)10, (short)0,
                 vertexList, indicesList, texcoordList, level);
+        faces.add(f);
 
 
-        face4 f5 = new Utils.face4( // bottom
-                e9, e5, e10, e1,
-                (short)1, (short)5, (short)6, (short)2,
+        f = new Utils.face4( // bottom
+                Face.bottom,
+                e16, e17, e18, e1,
+                (short)1, (short)12, (short)13, (short)2,
                 vertexList, indicesList, texcoordList, level);
+        faces.add(f);
 
-        f0.createChilds(level);
-        f1.createChilds(level);
-        f2.createChilds(level);
-        f3.createChilds(level);
-        f4.createChilds(level);
-        f5.createChilds(level);
+        if(level == 0)
+        {
+            for(face4 f0: faces) {
+                indicesList.add(f0.index0); indicesList.add(f0.index1); indicesList.add(f0.index2);
+                indicesList.add(f0.index2); indicesList.add(f0.index3); indicesList.add(f0.index0);
+            }
+
+        }
+        else {
+            for(face4 f0: faces) {
+                f0.createChilds(level);
+            }
+        }
 
         float[] normals = new float[vertexList.size()];
         Utils.CalcNormals(vertexList, indicesList, normals);
@@ -728,8 +847,8 @@ public class Utils {
             vertices[0][i++] = texcoordList.get(j * 2 + 1);
         }
         i = 0;
-        for (Short f : indicesList) {
-            indices[0][i++] = (f != null ? f : 0);
+        for (Short ind : indicesList) {
+            indices[0][i++] = (ind != null ? ind : 0);
         }
     }
 }

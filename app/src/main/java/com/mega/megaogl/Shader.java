@@ -13,6 +13,7 @@ public class Shader {
     public int mNormalHandle;
     public int mTexCoordHandle;
     public int mNormalMatrixHandle;
+    public int mTextureHandle;
 
     public Shader() {
         mProgramId = loadProgram(vertexShader, fragmentShader);
@@ -24,6 +25,7 @@ public class Shader {
         mNormalHandle = GLES20.glGetAttribLocation(mProgramId, "a_Normal");
         mTexCoordHandle = GLES20.glGetAttribLocation(mProgramId, "a_TexCoord");
         mNormalMatrixHandle = GLES20.glGetUniformLocation(mProgramId, "u_NormalMatrix");
+        mTextureHandle = GLES20.glGetUniformLocation(mProgramId, "u_ShapeTexture");
     }
     private static int getShader(String source, int type) {
         int shader = GLES20.glCreateShader(type);
@@ -94,17 +96,18 @@ public class Shader {
                     + "   v_Color = a_Color;\n"
                     + "   gl_Position = u_MVPMatrix * a_Position;\n"
                     + "   v_Normal = u_NormalMatrix * a_Normal;\n"
-                    + "   light = max(-dot(v_Normal, a_LightDir), 0.0f);\n"
+                    + "   light = max(-dot(v_Normal, a_LightDir) * 1.5f, 0.0f);\n"
                     + "   v_TexCoord = a_TexCoord; \n"
                     + "}\n";
     final String fragmentShader =
             "varying vec3 v_Normal;\n"
-                    +   "   //varying vec4 v_TexCoord;\n"
-                    + "//varying vec4 v_Color;\n"
+                    + "varying vec2 v_TexCoord;\n"
+                    + "uniform sampler2D u_ShapeTexture;\n"
                     + "varying float light;\n"
                     + "void main()\n"
                     + "{\n"
-                    + "vec3 col = vec3(1.0f, 1.0f, 1.0f);\n"
+                    + "vec3 col = texture2D(u_ShapeTexture, v_TexCoord).rgb;\n"
+                    //+ "vec3 col = vec3(1.0f, 1.0f, 1.0f) * 0.5f;\n"
                     + "gl_FragColor = vec4(light * col, 1.0f);\n"
                     + "}\n";
 }

@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
+import static android.opengl.GLES20.GL_LINEAR;
 import static android.opengl.GLES20.GL_TEXTURE0;
 import static android.opengl.GLES20.GL_TEXTURE_2D;
 
@@ -34,69 +35,126 @@ public class Texture {
         GLES20.glBindTexture(GL_TEXTURE_2D, textureIds[0]);
     }
 
-    public static void getCoord3D(Utils.vect3 v, Utils.vect2 out) {
-        int quater = 0;
-        final Utils.vect3 front = new Utils.vect3(0, 0, 1);
-        final Utils.vect3 right = new Utils.vect3(1, 0, 0);
-        final Utils.vect3 back = new Utils.vect3(0, 0, -1);
-        final Utils.vect3 left = new Utils.vect3(-1, 0, 0);
-        final Utils.vect3 top = new Utils.vect3(0, 1, 0);
-        final Utils.vect3 bottom = new Utils.vect3(0, -1, 0);
+    final static Utils.vect3 front = new Utils.vect3(0, 0, 1);
+    final static Utils.vect3 right = new Utils.vect3(1, 0, 0);
+    final static Utils.vect3 back = new Utils.vect3(0, 0, -1);
+    final static Utils.vect3 left = new Utils.vect3(-1, 0, 0);
+    final static Utils.vect3 top = new Utils.vect3(0, 1, 0);
+    final static Utils.vect3 bottom = new Utils.vect3(0, -1, 0);
 
+    public static void getCoord3D(Utils.vect3 v, Utils.vect2 out, Utils.Face quater) {
         Utils.vect3 vect;
-
-        double sin45 = Math.sqrt(2)/2;
-        if(v.y >= sin45) {
-            quater = 4; // top
-            vect = top;
-        }
-        if(v.y < -sin45) {
-            quater = 5; // bottom
-            vect = bottom;
-        }
-        else {
-            double xzAng = Math.atan2(v.z, v.x) * 180 / Math.PI;
-            if (xzAng >= 45 && xzAng < 135) {
-                quater = 0; // front
-                vect = front;
-            } else if (xzAng >= -45 && xzAng < 45) {
-                quater = 1; // right
-                vect = right;
-            } else if (xzAng >= -135 && xzAng < -45) {
-                quater = 2; // back
-                vect = back;
-            } else {//if((xzAng <= -135 || xzAng > 45)
-                quater = 3; // left
-                vect = left;
-            }
-        }
-
-        float t = 1.0f / Utils.vect3.dot(vect, v);
-        vect.mult(t); // this is a cross with the flat
         switch(quater) {
-            case 0: // front
-                out.x = (1.0f + vect.x + 0.5f) / 4;
-                out.y = (1.0f + vect.y + 0.5f) / 3;
+            case front:
+                vect = front;
                 break;
-            case 1: // right
-                out.x = (2.0f - vect.z + 0.5f) / 4;
-                out.y = (1.0f + vect.y + 0.5f) / 3;
+            case right:
+                vect = right;
                 break;
-            case 2: // back
-                out.x = (3.0f - vect.x + 0.5f) / 4;
-                out.y = (1.0f + vect.y + 0.5f) / 3;
+            case back:
+                vect = back;
                 break;
-            case 3: // left
-                out.x = (0.0f + vect.z + 0.5f) / 4;
-                out.y = (1.0f + vect.y + 0.5f) / 3;
+            case left:
+                vect = left;
                 break;
-            case 4: // top
-                out.x = (1.0f + vect.x + 0.5f) / 4;
-                out.y = (0.0f + vect.z + 0.5f) / 3;
+            case top:
+                vect = top;
                 break;
-            default: // top
-                out.x = (1.0f + vect.x + 0.5f) / 4;
-                out.y = (3.0f - vect.z + 0.5f) / 3;
+            default: // bottom
+                vect = bottom;
+                break;
+        }
+
+        float dot = Utils.vect3.dot(v, vect);
+        vect = Utils.vect3.mult(v, 1.0f/dot);
+        switch(quater) {
+            case front:
+                out.x = (1.0f + (vect.x + 1.0f) / 2) / 4;
+                out.y = (1.0f + (-vect.y + 1.0f) / 2) / 3;
+                break;
+            case right:
+                out.x = (2.0f + (-vect.z + 1.0f) / 2) / 4;
+                out.y = (1.0f + (-vect.y + 1.0f) / 2) / 3;
+                break;
+            case back:
+                out.x = (3.0f + (-vect.x + 1.0f) / 2) / 4;
+                out.y = (1.0f + (-vect.y + 1.0f) / 2) / 3;
+                break;
+            case left:
+                out.x = (0.0f + (vect.z + 1.0f) / 2) / 4;
+                out.y = (1.0f + (-vect.y + 1.0f) / 2) / 3;
+                break;
+            case top:
+                out.x = (1.0f + (vect.x + 1.0f) / 2) / 4;
+                out.y = (0.0f + (vect.z + 1.0f) / 2) / 3;
+                break;
+            default: // bottom
+                out.x = (1.0f + (vect.x + 1.0f) / 2) / 4;
+                out.y = (2.0f + (-vect.z + 1.0f) / 2) / 3;
+                break;
+        }
+    }
+
+    public static void getCoord3D(Utils.vect3 v, Utils.vect2 out) {
+        Utils.Face quater = Utils.Face.front;
+
+        // Find 6 crosses
+        float dot = Utils.vect3.dot(v, front);
+        float dot_max = 0;
+        if(dot > dot_max) {
+            dot_max = dot;
+            quater = Utils.Face.front;
+        }
+        dot = Utils.vect3.dot(v, right);
+        if(dot > dot_max) {
+            dot_max = dot;
+            quater = Utils.Face.right;
+        }
+        dot = Utils.vect3.dot(v, back);
+        if(dot > dot_max) {
+            dot_max = dot;
+            quater = Utils.Face.back;
+        }
+        dot = Utils.vect3.dot(v, left);
+        if(dot > dot_max) {
+            dot_max = dot;
+            quater = Utils.Face.left;
+        }
+        dot = Utils.vect3.dot(v, top);
+        if(dot > dot_max) {
+            dot_max = dot;
+            quater = Utils.Face.top;
+        }
+        dot = Utils.vect3.dot(v, bottom);
+        if(dot > dot_max) {
+            dot_max = dot;
+            quater = Utils.Face.bottom;
+        }
+        Utils.vect3 vect = Utils.vect3.mult(v, 1.0f/dot_max);
+        switch(quater) {
+            case front:
+                out.x = (1.0f + (vect.x + 1.0f) / 2) / 4;
+                out.y = (1.0f + (-vect.y + 1.0f) / 2) / 3;
+                break;
+            case right:
+                out.x = (2.0f + (-vect.z + 1.0f) / 2) / 4;
+                out.y = (1.0f + (-vect.y + 1.0f) / 2) / 3;
+                break;
+            case back:
+                out.x = (3.0f + (-vect.x + 1.0f) / 2) / 4;
+                out.y = (1.0f + (-vect.y + 1.0f) / 2) / 3;
+                break;
+            case left:
+                out.x = (0.0f + (vect.z + 1.0f) / 2) / 4;
+                out.y = (1.0f + (-vect.y + 1.0f) / 2) / 3;
+                break;
+            case top:
+                out.x = (1.0f + (vect.x + 1.0f) / 2) / 4;
+                out.y = (0.0f + (vect.z + 1.0f) / 2) / 3;
+                break;
+            default: // bottom
+                out.x = (1.0f + (vect.x + 1.0f) / 2) / 4;
+                out.y = (2.0f + (-vect.z + 1.0f) / 2) / 3;
                 break;
         }
     }
