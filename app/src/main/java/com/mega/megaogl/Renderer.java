@@ -22,13 +22,6 @@ public class Renderer implements GLSurfaceView.Renderer {
     static final int mBytesPerFloat = 4;
     static final int mBytesPerShort = 2;
 
-    private int[] sphereVao = new int[1];
-    private FloatBuffer sphereVertexBuffer;
-    private ShortBuffer sphereIndicesBuffer;
-    final int[] vbo = new int[] {0};
-    final int[] nbo = new int[] {0};
-    final int[] ibo = new int[] {0};
-    int err = 0;
     double angle = 0;
     double dAngle = 0.5;
 
@@ -70,7 +63,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         shader = new Shader();
         shader.use();
         //setupBuffers();
-        sphere1 = new SphereModel(shader, 3);
+        sphere1 = new SphereModel(shader, 15);
         //sphere2 = new SphereModel(shader, 2);
         //sphere3 = new SphereModel(shader, 3);
 

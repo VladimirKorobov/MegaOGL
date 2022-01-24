@@ -1,10 +1,12 @@
 package com.mega.megaogl;
 
-import android.opengl.GLES20;
 import android.opengl.Matrix;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 public class Utils {
     public enum Face {
@@ -128,6 +130,7 @@ public class Utils {
         result[7] = m[5];
         result[8] = m[8];
     }
+
     public static void normalize(float[] mat3) {
         float len0 = (float)Math.sqrt(mat3[0]*mat3[0] + mat3[1]*mat3[1] + mat3[2]*mat3[2]);
         float len1 = (float)Math.sqrt(mat3[3]*mat3[3] + mat3[4]*mat3[4] + mat3[5]*mat3[5]);
@@ -138,170 +141,91 @@ public class Utils {
         mat3[2] /= len0; mat3[5] /= len1; mat3[8] /= len2;
     }
 
-    public static class edge {
-        public short indexStart;
-        public short indexEnd;
-        public short indexMiddle;
-        public edge childEdge0;
-        public edge childEdge1;
-
-        public edge( short indexStart, short indexEnd) {
-            this.indexStart = indexStart;
-            this.indexEnd = indexEnd;
-            indexMiddle = -1;
-        }
-        public void createChilds(short index) {
-            childEdge0 = new edge(indexStart, index);
-            childEdge1 = new edge(index, indexEnd);
-            indexMiddle = index;
-        }
-        public boolean hasChild() {
-            return childEdge0 != null && childEdge1 != null;
-        }
-    }
-
-    public static class face4 {
-        edge edge0;
-        edge edge1;
-        edge edge2;
-        edge edge3;
-        public short index0;
-        public short index1;
-        public short index2;
-        public short index3;
-        vect2 tex = new vect2();
-        List<Float> vertices;
-        List<Short> indices;
-        List<Float> texCoord;
-        public Utils.Face quater;
-        public face4(Utils.Face quater, edge edge0, edge edge1, edge edge2, edge edge3,
-                     short index0, short index1, short index2, short index3,
-                     List<Float> vertices, List<Short> indices, List<Float> texCoord,
-                     int level) {
-            this.edge0 = edge0;
-            this.edge1 = edge1;
-            this.edge2 = edge2;
-            this.edge3 = edge3;
-            this.index0 = index0;
-            this.index1 = index1;
-            this.index2 = index2;
-            this.index3 = index3;
-            this.vertices = vertices;
-            this.indices = indices;
-            this.texCoord = texCoord;
-            this.quater = quater;
-        }
-
-        private short addVertexToCenter(int level) {
-            // assuming, it's level == 1
-            vect3 newVert = new vect3(vertices.get(index0 * 3), vertices.get(index0 * 3 + 1), vertices.get(index0 * 3 + 2));
-            vect3 v1 = new vect3(vertices.get(index1 * 3), vertices.get(index1 * 3 + 1), vertices.get(index1 * 3 + 2));
-            vect3 v2 = new vect3(vertices.get(index2 * 3), vertices.get(index2 * 3 + 1), vertices.get(index2 * 3 + 2));
-            vect3 v3 = new vect3(vertices.get(index3 * 3), vertices.get(index3 * 3 + 1), vertices.get(index3 * 3 + 2));
-
-            newVert.add(v1).add(v2).add(v3).normalize();
-            short lastIndex = (short)(vertices.size() / 3);
-            // add vertex
-            vertices.add(newVert.x); vertices.add(newVert.y); vertices.add(newVert.z);
-            Texture.getCoord3D(newVert, tex, quater);
-            texCoord.add(tex.x); texCoord.add(tex.y);
-
-            if(level == 1) {
-                // add four triangles
-                indices.add(index0);
-                indices.add(index1);
-                indices.add(lastIndex);
-                indices.add(index1);
-                indices.add(index2);
-                indices.add(lastIndex);
-                indices.add(index2);
-                indices.add(index3);
-                indices.add(lastIndex);
-                indices.add(index3);
-                indices.add(index0);
-                indices.add(lastIndex);
-            }
-            return lastIndex;
-        }
-
-        private boolean edgesHaveChilds() {
-            return edge0.hasChild() && edge1.hasChild() && edge2.hasChild() && edge3.hasChild();
-        }
-
-        private void createMiddleEdgeVertex(edge _edge) {
-            if(_edge.indexMiddle == -1) {
-                vect3 v0 = new vect3(
-                        vertices.get(_edge.indexStart * 3),
-                        vertices.get(_edge.indexStart * 3 + 1),
-                        vertices.get(_edge.indexStart * 3 + 2));
-                vect3 v1 = new vect3(
-                        vertices.get(_edge.indexEnd * 3),
-                        vertices.get(_edge.indexEnd * 3 + 1),
-                        vertices.get(_edge.indexEnd * 3 + 2));
-
-                vect3 v = vect3.sum(v0, v1);
-                v.normalize();
-                _edge.createChilds((short)(vertices.size()/3));
-                vertices.add(v.x);
-                vertices.add(v.y);
-                vertices.add(v.z);
-                Texture.getCoord3D(v, tex,quater);
-                texCoord.add(tex.x); texCoord.add(tex.y);
-            }
-        }
-
-        public void createChilds(int level) {
-            short newIndex = addVertexToCenter(level);
-            if(level > 1) {
-                // Assuming child for edges has alreadybeen created,
-                createMiddleEdgeVertex(edge0);
-                createMiddleEdgeVertex(edge1);
-                createMiddleEdgeVertex(edge2);
-                createMiddleEdgeVertex(edge3);
-
-                edge newEdge0 = new edge(edge0.indexMiddle, newIndex);
-                edge newEdge1 = new edge(edge1.indexMiddle, newIndex);
-                edge newEdge2 = new edge(edge2.indexMiddle, newIndex);
-                edge newEdge3 = new edge(edge3.indexMiddle, newIndex);
-
-                // Create four new faces
-                edge tempEdge0 = edge0.indexStart == index0 ? edge0.childEdge0 : edge0.childEdge1;
-                edge tempEdge1 = edge3.indexStart == index0 ? edge3.childEdge0 : edge3.childEdge1;
-                face4 f0 = new face4(quater, tempEdge0, newEdge0, newEdge3, tempEdge1,
-                        index0, edge0.indexMiddle, newIndex, edge3.indexMiddle,
-                        vertices, indices, texCoord, level);
-                tempEdge0 = edge0.indexStart == index1 ? edge0.childEdge0 : edge0.childEdge1;
-                tempEdge1 = edge1.indexStart == index1 ? edge1.childEdge0 : edge1.childEdge1;
-                face4 f1 = new face4(quater, tempEdge0, tempEdge1, newEdge1, newEdge0,
-                        edge0.indexMiddle, index1, edge1.indexMiddle, newIndex,
-                        vertices, indices, texCoord, level);
-                tempEdge0 = edge1.indexStart == index2 ? edge1.childEdge0 : edge1.childEdge1;
-                tempEdge1 = edge2.indexStart == index2 ? edge2.childEdge0 : edge2.childEdge1;
-                face4 f2 = new face4(quater, tempEdge0, tempEdge1, newEdge2, newEdge1,
-                        edge1.indexMiddle, index2, edge2.indexMiddle, newIndex,
-                        vertices, indices, texCoord, level);
-                tempEdge0 = edge2.indexStart == index3 ? edge2.childEdge0 : edge2.childEdge1;
-                tempEdge1 = edge3.indexStart == index3 ? edge3.childEdge0 : edge3.childEdge1;
-                face4 f3 = new face4(quater, tempEdge0, tempEdge1, newEdge3, newEdge2,
-                        edge2.indexMiddle, index3, edge3.indexMiddle, newIndex,
-                        vertices, indices, texCoord, level);
-
-                if (--level > 0) {
-                    f0.createChilds(level);
-                    f1.createChilds(level);
-                    f2.createChilds(level);
-                    f3.createChilds(level);
-                }
-            }
-        }
-    }
-
     public static void AddToArrayList(List<Float> vertices, double x, double y, double z) {
         vertices.add((float)x);
         vertices.add((float)y);
         vertices.add((float)z);
     }
 
+    private static void CalcNormals(float[] vertices, short[] indices, int offset, int stride) {
+        for(int i = 0; i < vertices.length; i += stride) {
+            vertices[i + offset] = 0;
+            vertices[i + offset + 1] = 0;
+            vertices[i + offset + 2] = 0;
+        }
+
+        final vect3 A = new vect3();
+        final vect3 B = new vect3();
+        final vect3 C = new vect3();
+
+        for(int i = 0; i < indices.length; i += 3) {
+            int vertOffset0 = indices[i] * stride;
+            float ax = vertices[vertOffset0];
+            float ay = vertices[vertOffset0 + 1];
+            float az = vertices[vertOffset0 + 2];
+            int vertOffset1 = indices[i + 1] * stride;
+            float bx = vertices[vertOffset1];
+            float by = vertices[vertOffset1 + 1];
+            float bz = vertices[vertOffset1 + 2];
+            int vertOffset2 = indices[i + 2] * stride;
+            float cx = vertices[vertOffset2];
+            float cy = vertices[vertOffset2 + 1];
+            float cz = vertices[vertOffset2 + 2];
+
+            A.init(ax, ay, az);
+            B.init(bx, by, bz);
+            C.init(cx, cy, cz);
+
+            vect3 edgeab = vect3.subt(B,A);
+            vect3 edgeac = vect3.subt(C,A);
+            vect3 edgebc = vect3.subt(C,B);
+
+            vect3 n = new vect3(0, 0, 1);
+
+            if (vect3.length(edgeab) > 1.e-6)
+            {
+                if (vect3.length(edgeac) > 1.e-6)
+                {
+                    vect3 v1 = vect3.normalize(edgeab);
+                    vect3 v2 = vect3.normalize(edgeac);
+
+                    //n = vect3.cross(vect3.normalize(edgeab), vect3.normalize(edgeac));
+                    n = vect3.cross(v1, v2);
+                }
+                else if (vect3.length(edgebc) > 1.e-6)
+                {
+                    n = vect3.cross(vect3.normalize(edgebc), vect3.normalize(edgeab));
+                }
+            }
+            else {
+                if (vect3.length(edgeac) > 1.e-6 && vect3.length(edgebc) > 1.e-6) {
+                    n = vect3.cross(vect3.normalize(edgebc), vect3.normalize(edgeac));
+                }
+            }
+            n = vect3.normalize(n);
+            vertices[vertOffset0 + offset] += n.x;
+            vertices[vertOffset0 + offset + 1] += n.y;
+            vertices[vertOffset0 + offset + 2] += n.z;
+            vertices[vertOffset1 + offset] += n.x;
+            vertices[vertOffset1 + offset + 1] += n.y;
+            vertices[vertOffset1 + offset + 2] += n.z;
+            vertices[vertOffset2 + offset] += n.x;
+            vertices[vertOffset2 + offset + 1] += n.y;
+            vertices[vertOffset2 + offset + 2] += n.z;
+        }
+        // Normalize normals
+        for( int i = 0; i < vertices.length; i += stride) {
+            float length = vect3.length(new vect3(
+                    vertices[i + offset],
+                    vertices[i + offset + 1],
+                    vertices[i + offset + 2]));
+            if(length > 0) {
+                vertices[i + offset] /= length;
+                vertices[i + offset + 1] /= length;
+                vertices[i + offset + 2] /= length;
+            }
+        }
+    }
     private static void CalcNormals(List<Float> vertices, List<Short> indices, float[] normals) {
 
         for(int i = 0; i < normals.length; i ++) {
@@ -377,478 +301,209 @@ public class Utils {
         }
     }
 
-/*
-    private static void CalcNormals(float[] vertices, short[] indices, float[] normals) {
-
-        for(int i = 0; i < normals.length; i ++) {
-            normals[i] = 0;
+    static class myHashTable {
+        public HashMap<Long, List<Short>> map = new HashMap<>();
+        public static long getKey(vect3 v) {
+            return ((long)(v.x * 0x100000) << 42) + ((long)(v.y * 0x100000) << 21) +
+                    ((int)(v.z * 0x100000));
         }
-
-        for(int i = 0; i < indices.length; i += 3) {
-            int vertindex0 = indices[i];
-            int vertindex1 = indices[i + 1];
-            int vertindex2 = indices[i + 2];
-
-            float a0 = vertices[vertindex0 * 3];
-            float b0 = vertices[vertindex1 * 3];
-            float c0 = vertices[vertindex2 * 3];
-
-            float a1 = vertices[vertindex0 * 3 + 1];
-            float b1 = vertices[vertindex1 * 3 + 1];
-            float c1 = vertices[vertindex2 * 3 + 1];
-
-            float a2 = vertices[vertindex0 * 3 + 2];
-            float b2 = vertices[vertindex1 * 3 + 2];
-            float c2 = vertices[vertindex2 * 3 + 2];
-
-            vect3 A = new vect3(a0, a1, a2);
-            vect3 B = new vect3(b0, b1, b2);
-            vect3 C = new vect3(c0, c1, c2);
-
-            vect3 edgeab = vect3.subt(B,A);
-            vect3 edgeac = vect3.subt(C,A);
-            vect3 edgebc = vect3.subt(C,B);
-
-            vect3 n = new vect3(0, 0, 1);
-
-            if (vect3.length(edgeab) > 1.e-6)
-            {
-                if (vect3.length(edgeac) > 1.e-6)
-                {
-                    vect3 v1 = vect3.normalize(edgeab);
-                    vect3 v2 = vect3.normalize(edgeac);
-
-                    //n = vect3.cross(vect3.normalize(edgeab), vect3.normalize(edgeac));
-                    n = vect3.cross(v1, v2);
-                }
-                else if (vect3.length(edgebc) > 1.e-6)
-                {
-                    n = vect3.cross(vect3.normalize(edgebc), vect3.normalize(edgeab));
-                }
+        public void put(long key, short value) {
+            List<Short> list;
+            if(map.containsKey(key)) {
+                list = map.get(key);
             }
             else {
-                if (vect3.length(edgeac) > 1.e-6 && vect3.length(edgebc) > 1.e-6) {
-                    n = vect3.cross(vect3.normalize(edgebc), vect3.normalize(edgeac));
+                list = new ArrayList<>();
+                map.put(key, list);
+            }
+            list.add(value);
+        }
+    }
+
+    public static void CalcSphereForCube(float[][] vertices, short[][] indices, int level) {
+        level++;
+        int stride = 3 + 3 + 2;
+        int vertexPerFace = (level + 1) * (level + 1);
+        int indexPerFace = level * level * 3 * 2;
+        float[] vert = new float[vertexPerFace  * stride * 6];
+        short[] ind = new short[indexPerFace * 6];
+        short[] equalInd2;
+        short[] equalInd3;
+        final vect3 vect = new vect3();
+        final float[] mat4 = new float[16];
+        final float[] mat3 = new float[9];
+        myHashTable equalVert = new myHashTable();
+
+        // cycle indices
+        int ix = 0;
+        int iy = 0;
+        int k = 0;
+        int indIndex = 0;
+        int vertIndex = 0;
+        int equalVert2 = 0;
+        int equalVert3 = 0;
+
+        // cycle float incremets
+        float dx = 2.0f / level;
+        float dy = -2.0f / level;
+        float dt = 1.0f / level;
+
+        // Texture coordinate scaling
+        float ktx = 0.25f;
+        float kty = 1.0f/3;
+
+        int offset;
+
+        for (k = 0; k < 6; k++) {
+            // init face parameters
+            Matrix.setIdentityM(mat4, 0);
+            offset = k * vertexPerFace * stride;
+            float txOffset = 0;
+            float tyOffset = 0;
+            switch (k) {
+                case 0: // front
+                    txOffset = 0.25f; tyOffset = 1.0f/3;
+                    break;
+                case 1: // right
+                    txOffset = 0.5f; tyOffset = 1.0f/3;
+                    Matrix.rotateM(mat4, 0, 90, 0, 1, 0);
+                    break;
+                case 2: // back
+                    txOffset = 0.75f; tyOffset = 1.0f/3;
+                    Matrix.rotateM(mat4, 0, 180, 0, 1, 0);
+                    break;
+                case 3: // left
+                    txOffset = 0.0f; tyOffset = 1.0f/3;
+                    Matrix.rotateM(mat4, 0, 270, 0, 1, 0);
+                    break;
+                case 4: // top
+                    txOffset = 0.25f; tyOffset = 0.0f/3;
+                    Matrix.rotateM(mat4, 0, 270, 1, 0, 0);
+                    break;
+                case 5: // top
+                    txOffset = 0.25f; tyOffset = 2.0f/3;
+                    Matrix.rotateM(mat4, 0, 90, 1, 0, 0);
+                    break;
+            }
+            Utils.mat3(mat4, mat3);
+            float ty = 0;
+            float y = 1;
+            for (iy = 0; iy <= level; iy++, ty += dt, y += dy) {
+                float tx = 0;
+                float x = -1;
+
+                for (ix = 0; ix <= level; ix++, tx += dt, x += dx, offset += stride) {
+                    vect.init(x, y, 1).normalize();
+                    vect.matrix3Mult(mat3);
+                    equalVert.put(myHashTable.getKey(vect),(short)vertIndex);
+                    vert[offset] = vert[offset + 3] = vect.x;
+                    vert[offset + 1] = vert[offset + 4] = vect.y;
+                    vert[offset + 2] = vert[offset + 5] = vect.z;
+
+                    vert[offset + 6] = tx * ktx + txOffset;
+                    vert[offset + 7] = ty * kty + tyOffset;
+
+                    if(ix > 0 && iy > 0) {
+                        ind[indIndex ++] = (short)((vertIndex - 1) - (level + 1));
+                        ind[indIndex ++] = (short)(vertIndex -1);
+                        ind[indIndex ++] = (short)(vertIndex);
+                        ind[indIndex ++] = (short)(vertIndex);
+                        ind[indIndex ++] = (short)(vertIndex - (level + 1));
+                        ind[indIndex ++] = (short)((vertIndex - 1) - (level + 1));
+                    }
+                    vertIndex ++;
                 }
             }
-            n = vect3.normalize(n);
-            normals[vertindex0 * 3] += n.x;
-            normals[vertindex0 * 3 + 1] += n.y;
-            normals[vertindex0 * 3 + 2] += n.z;
-            normals[vertindex1 * 3] += n.x;
-            normals[vertindex1 * 3 + 1] += n.y;
-            normals[vertindex1 * 3 + 2] += n.z;
-            normals[vertindex2 * 3] += n.x;
-            normals[vertindex2 * 3 + 1] += n.y;
-            normals[vertindex2 * 3 + 2] += n.z;
         }
-        // Normalize normals
-        for( int i = 0; i < normals.length; i += 3) {
-            float length = vect3.length(new vect3(normals[i], normals[i + 1], normals[i + 2]));
-            if(length > 0) {
-                normals[i] /= length;
-                normals[i + 1] /= length;
-                normals[i + 2] /= length;
+        List<vect3> distortVectors = new ArrayList<>();
+        List<Float> distortValues = new ArrayList<>();
+
+        distortVectors.add(new vect3(0, 0, 1));
+        distortValues.add(0.5f);
+        distortVectors.add(new vect3(0, 0, -1));
+        distortValues.add(1.1f);
+        distortVectors.add(new vect3(1, 0, 0));
+        distortValues.add(1.1f);
+        distortVectors.add(new vect3(-1, 0, 0));
+        distortValues.add(1.1f);
+        distortVectors.add(new vect3(0, 1, 0));
+        distortValues.add(1.1f);
+        distortVectors.add(new vect3(0, -1, 0));
+        distortValues.add(1.1f);
+
+
+
+        distortVectors.add(new vect3(1, 1, 1).normalize());
+        distortValues.add(0.9f);
+        distortVectors.add(new vect3(1, -1, 1).normalize());
+        distortValues.add(0.9f);
+
+        distortVectors.add(new vect3(1, 1, -1).normalize());
+        distortValues.add(0.9f);
+        distortVectors.add(new vect3(1, -1, -1).normalize());
+
+        distortValues.add(0.9f);
+        distortVectors.add(new vect3(-1, 1, 1).normalize());
+        distortValues.add(0.5f);
+
+        //Distort(vert, stride, distortVectors, distortValues, 0);
+
+        CalcNormals(vert, ind, 3, stride);
+        vertices[0] = vert;
+        indices[0] = ind;
+        // correct normals
+        Collection<List<Short>> values = equalVert.map.values();
+        final vect3 n = new vect3();
+        for (List<Short> v : values) {
+            if(v.size() == 2 || v.size() == 3) {
+                n.init(0, 0, 0);
+                for (Short index : v) {
+                    offset = index * stride + 3;
+                    vect.init(vert[offset], vert[offset + 1], vert[offset + 2]);
+                    n.add(vect);
+                }
+                n.normalize();
+                for (Short index : v) {
+                    offset = index * stride + 3;
+                    vert[offset] = n.x;
+                    vert[offset + 1] = n.y;
+                    vert[offset + 2] = n.z;
+                }
+            }
+            else if(v.size() == 1) {
+                // Skip
+            }
+            else {
+                // error
+                return;
             }
         }
     }
-*/
-    public static void CalcRect1(float[][] vertices, short[][] indices)
-    {
-        vertices[0] = new float[12 * 2];
-        indices[0] = new short[6];
 
-        vertices[0][0] = -0.5f;
-        vertices[0][1] = -0.5f;
-        vertices[0][2] = 0;
+    public static void Distort(float[] vert, int stride, List<vect3> extrems, List<Float> values, int rand) {
+        final vect3 vect = new vect3();
+        final vect3 vect1 = new vect3();
+        Random random = new Random();
 
-        vertices[0][4] = -0.5f;
-        vertices[0][5] = -0.5f;
-        vertices[0][6] = 0;
+        for(int i = 0; i < vert.length; i += stride) {
+            vect.init(vert[i], vert[i + 1], vert[i + 2]);
+            float factor = 1;
+            int index = 0;
+            int maxIndex = 0;
+            float max = 1;
+            for(vect3 v : extrems) {
+                float f = vect3.dot(v, vect);
 
-        float len = (float)Math.sqrt(vertices[0][4] * vertices[0][4] +
-                vertices[0][5] * vertices[0][5] + vertices[0][6] * vertices[0][6]);
+                if(f > 0) {
+                    factor += Math.pow(f, 40) * (values.get(index) - 1);
 
-        vertices[0][4] /= len;
-        vertices[0][5] /= len;
-        vertices[0][6] /= len;
-
-
-        vertices[0][6] = -0.5f;
-        vertices[0][7] = 0.5f;
-        vertices[0][8] = 0;
-
-        vertices[0][9] = -0.5f;
-        vertices[0][10] = 0.5f;
-        vertices[0][11] = 0;
-
-        len = (float)Math.sqrt(vertices[0][9] * vertices[0][9] +
-                vertices[0][10] * vertices[0][10] + vertices[0][11] * vertices[0][11]);
-
-        vertices[0][9] /= len;
-        vertices[0][10] /= len;
-        vertices[0][11] /= len;
-
-
-        vertices[0][12] = 0.5f;
-        vertices[0][13] = 0.5f;
-        vertices[0][14] = 0;
-
-        vertices[0][15] = 0.5f;
-        vertices[0][16] = 0.5f;
-        vertices[0][17] = 0;
-
-        len = (float)Math.sqrt(vertices[0][15] * vertices[0][15] +
-                vertices[0][16] * vertices[0][16] + vertices[0][17] * vertices[0][17]);
-
-        vertices[0][15] /= len;
-        vertices[0][16] /= len;
-        vertices[0][17] /= len;
-
-        vertices[0][18] = 0.5f;
-        vertices[0][19] = -0.5f;
-        vertices[0][20] = 0;
-
-        vertices[0][21] = 0.5f;
-        vertices[0][22] = -0.5f;
-        vertices[0][23] = 0;
-
-        len = (float)Math.sqrt(vertices[0][21] * vertices[0][21] +
-                vertices[0][22] * vertices[0][22] + vertices[0][23] * vertices[0][23]);
-
-        vertices[0][21] /= len;
-        vertices[0][22] /= len;
-        vertices[0][23] /= len;
-
-        indices[0][0] = 0;
-        indices[0][1] = 3;
-        indices[0][2] = 1;
-        indices[0][3] = 3;
-        indices[0][4] = 2;
-        indices[0][5] = 1;
-    }
-
-
-    public static void CalcRect(float[][] vertices, short[][] indices)
-    {
-        float[] v = {
-                -1,  1, 0,   0, 0,
-                -1, -1, 0,   0, 1,
-                1, -1, 0,   1, 1,
-                1,  1, 0,   1, 0,
-
-        };
-
-        short[] i = {
-                3,0,1,1,2,3
-        };
-
-        vertices[0] = v;
-        indices[0] = i;
-
-
-        /*
-        vertices[0] = new float[4 * (3 + 2)];
-        indices[0] = new short[6];
-
-        vertices[0][0] = -0.5f;
-        vertices[0][1] = 0.5f;
-        vertices[0][2] = 0;
-        vertices[0][3] = 0.0f;
-        vertices[0][4] = 0.0f;
-        vertices[0][5] = 1.0f;
-        vertices[0][6] = 0.0f;
-        vertices[0][7] = 1.0f;
-
-        vertices[0][8] = -0.5f;
-        vertices[0][9] = -0.5f;
-        vertices[0][10] = 0;
-        vertices[0][11] = 0.0f;
-        vertices[0][12] = 0.0f;
-        vertices[0][13] = 1.0f;
-        vertices[0][14] = 0.0f;
-        vertices[0][15] = 0.0f;
-
-        vertices[0][16] = 0.5f;
-        vertices[0][17] = -0.5f;
-        vertices[0][18] = 0;
-        vertices[0][19] = 0.0f;
-        vertices[0][20] = 0.0f;
-        vertices[0][21] = 1.0f;
-        vertices[0][22] = 1f;
-        vertices[0][23] = 0f;
-
-        vertices[0][24] = 0.5f;
-        vertices[0][25] = 0.5f;
-        vertices[0][26] = 0;
-        vertices[0][27] = 0.0f;
-        vertices[0][28] = 0.0f;
-        vertices[0][29] = 1.0f;
-        vertices[0][30] = 1f;
-        vertices[0][31] = 1f;
-
-        indices[0][0] = 0;
-        indices[0][1] = 2;
-        indices[0][2] = 3;
-        indices[0][3] = 0;
-        indices[0][4] = 1;
-        indices[0][5] = 2;
-        (
-         */
-    }
-
-    public static void CalcCube(float[][] vertices, short[][] indices) {
-        vertices[0] = new float[8 * 3 * 2];
-        indices[0] = new short[6 * 6];
-
-        int i = 0;
-
-        vertices[0][i++] = -1.0f; vertices[0][i++] = -1.0f; vertices[0][i++] = 1.0f;
-        vertices[0][i++] = -1.0f; vertices[0][i++] = -1.0f; vertices[0][i++] = 1.0f;
-
-        vertices[0][i++] = -1.0f; vertices[0][i++] = 1.0f; vertices[0][i++] = 1.0f;
-        vertices[0][i++] = -1.0f; vertices[0][i++] = 1.0f; vertices[0][i++] = 1.0f;
-
-        vertices[0][i++] = 1.0f; vertices[0][i++] = 1.0f; vertices[0][i++] = 1.0f;
-        vertices[0][i++] = 1.0f; vertices[0][i++] = 1.0f; vertices[0][i++] = 1.0f;
-
-        vertices[0][i++] = 1.0f; vertices[0][i++] = -1.0f; vertices[0][i++] = 1.0f;
-        vertices[0][i++] = 1.0f; vertices[0][i++] = -1.0f; vertices[0][i++] = 1.0f;
-
-        vertices[0][i++] = -1.0f; vertices[0][i++] = -1.0f; vertices[0][i++] = -1.0f;
-        vertices[0][i++] = -1.0f; vertices[0][i++] = -1.0f; vertices[0][i++] = -1.0f;
-
-        vertices[0][i++] = -1.0f; vertices[0][i++] = 1.0f; vertices[0][i++] = -1.0f;
-        vertices[0][i++] = -1.0f; vertices[0][i++] = 1.0f; vertices[0][i++] = -1.0f;
-
-        vertices[0][i++] = 1.0f; vertices[0][i++] = 1.0f; vertices[0][i++] = -1.0f;
-        vertices[0][i++] = 1.0f; vertices[0][i++] = 1.0f; vertices[0][i++] = -1.0f;
-
-        vertices[0][i++] = 1.0f; vertices[0][i++] = -1.0f; vertices[0][i++] = -1.0f;
-        vertices[0][i++] = 1.0f; vertices[0][i++] = -1.0f; vertices[0][i++] = -1.0f;
-
-        // Normalize
-        float[] vert = vertices[0];
-        for(i = 0; i < 8; i ++)
-        {
-            float len = (float)Math.sqrt(vert[i * 6 + 3] * vert[i * 6 + 3] +
-                    vert[i * 6 + 4] * vert[i * 6 + 4] +
-                    vert[i * 6 + 5] * vert[i * 6 + 5]);
-            if(len > 0) {
-                vert[i * 6 + 3] /= len;
-                vert[i * 6 + 4] /= len;
-                vert[i * 6 + 5] /= len;
+                }
+                index ++;
             }
-        }
+            //max = (float)Math.pow(max, 2);
+            //factor = (1 + max) /  (extrems.size() + 1);
 
-        i = 0;
-        indices[0][i++] = 0; indices[0][i++] = 3; indices[0][i++] = 1;
-        indices[0][i++] = 3; indices[0][i++] = 2; indices[0][i++] = 1;
-
-        indices[0][i++] = 3; indices[0][i++] = 7; indices[0][i++] = 2;
-        indices[0][i++] = 7; indices[0][i++] = 6; indices[0][i++] = 2;
-
-        indices[0][i++] =7; indices[0][i++] = 4; indices[0][i++] = 6;
-        indices[0][i++] = 4; indices[0][i++] = 5; indices[0][i++] = 6;
-
-        indices[0][i++] =4; indices[0][i++] = 0; indices[0][i++] = 5;
-        indices[0][i++] = 0; indices[0][i++] = 1; indices[0][i++] = 5;
-
-        indices[0][i++] =1; indices[0][i++] = 2; indices[0][i++] = 5;
-        indices[0][i++] = 2; indices[0][i++] = 6; indices[0][i++] = 5;
-
-        indices[0][i++] =4; indices[0][i++] = 7; indices[0][i++] = 0;
-        indices[0][i++] = 7; indices[0][i++] = 3; indices[0][i++] = 0;
-    }
-
-    public static void CalcSphere(float[][] vertices, short[][] indices, int level) {
-        // Create base cube
-        List<Float> vertexList =  new ArrayList<>();
-        List<Float> texcoordList =  new ArrayList<>();
-        List<Short> indicesList =  new ArrayList<>();
-        vect2 tex = new vect2();
-
-        final vect3 u = new vect3(-1, 1, 1).normalize();
-        // front
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //0
-        Texture.getCoord3D(u, tex, Face.front);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        u.init(-1, -1, 1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //1
-        Texture.getCoord3D(u, tex, Face.front);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        u.init(1, -1, 1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //2
-        Texture.getCoord3D(u, tex, Face.front);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        u.init(1, 1, 1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //3
-        Texture.getCoord3D(u, tex, Face.front);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        // right
-        u.init(1, 1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //4
-        Texture.getCoord3D(u, tex, Face.right);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        u.init(1, -1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //5
-        Texture.getCoord3D(u, tex, Face.right);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        // back
-        u.init(-1, -1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //6
-        Texture.getCoord3D(u, tex, Face.back);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        u.init(-1, 1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //7
-        Texture.getCoord3D(u, tex, Face.back);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        //left
-        u.init(-1, 1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //8
-        Texture.getCoord3D(u, tex, Face.left);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        u.init(-1, -1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //9
-        Texture.getCoord3D(u, tex, Face.left);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        //top
-        u.init(-1, 1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //10
-        Texture.getCoord3D(u, tex, Face.top);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        u.init(1, 1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //11
-        Texture.getCoord3D(u, tex, Face.top);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        //bottom
-        u.init(-1, -1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //12
-        Texture.getCoord3D(u, tex, Face.bottom);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        u.init(1, -1, -1).normalize();
-        vertexList.add(u.x); vertexList.add(u.y); vertexList.add(u.z); //13
-        Texture.getCoord3D(u, tex, Face.bottom);
-        texcoordList.add(tex.x); texcoordList.add(tex.y);
-
-        // Create edges
-        edge e0 = new edge((short)0, (short)1);
-        edge e1 = new edge((short)1, (short)2);
-        edge e2 = new edge((short)2, (short)3);
-        edge e3 = new edge((short)3, (short)0);
-
-        edge e4 = new edge((short)2, (short)5);
-        edge e5 = new edge((short)5, (short)4);
-        edge e6 = new edge((short)4, (short)3);
-
-        edge e7 = new edge((short)5, (short)6);
-        edge e8 = new edge((short)6, (short)7);
-        edge e9 = new edge((short)7, (short)4);
-
-        edge e10 = new edge((short)0, (short)8);
-        edge e11 = new edge((short)8, (short)9);
-        edge e12 = new edge((short)9, (short)1);
-
-        edge e13 = new edge((short)3, (short)11);
-        edge e14 = new edge((short)11, (short)10);
-        edge e15 = new edge((short)10, (short)0);
-
-        edge e16 = new edge((short)1, (short)12);
-        edge e17 = new edge((short)12, (short)13);
-        edge e18 = new edge((short)13, (short)2);
-
-        List<face4> faces = new ArrayList<>();
-
-        face4 f = new Utils.face4( // front
-                Face.front,
-                e0, e1, e2, e3,
-                (short)0, (short)1, (short)2, (short)3,
-                vertexList, indicesList, texcoordList, level);
-        faces.add(f);
-        f = new Utils.face4( // right
-                Face.right,
-                e2, e4, e5, e6,
-                (short)3, (short)2, (short)5, (short)4,
-                vertexList, indicesList, texcoordList, level);
-        faces.add(f);
-
-        f = new Utils.face4( // back
-                Face.back,
-                e5, e7, e8, e9,
-                (short)4, (short)5, (short)6, (short)7,
-                vertexList, indicesList, texcoordList, level);
-        faces.add(f);
-
-        f = new Utils.face4( // left
-                Face.left,
-                e10, e11, e12, e0,
-                (short)0, (short)8, (short)9, (short)1,
-                vertexList, indicesList, texcoordList, level);
-        faces.add(f);
-
-        f = new Utils.face4( //top
-                Face.top,
-                e13, e14, e15, e3,
-                (short)3, (short)11, (short)10, (short)0,
-                vertexList, indicesList, texcoordList, level);
-        faces.add(f);
-
-
-        f = new Utils.face4( // bottom
-                Face.bottom,
-                e16, e17, e18, e1,
-                (short)1, (short)12, (short)13, (short)2,
-                vertexList, indicesList, texcoordList, level);
-        faces.add(f);
-
-        if(level == 0)
-        {
-            for(face4 f0: faces) {
-                indicesList.add(f0.index0); indicesList.add(f0.index1); indicesList.add(f0.index2);
-                indicesList.add(f0.index2); indicesList.add(f0.index3); indicesList.add(f0.index0);
-            }
-
-        }
-        else {
-            for(face4 f0: faces) {
-                f0.createChilds(level);
-            }
-        }
-
-        float[] normals = new float[vertexList.size()];
-        Utils.CalcNormals(vertexList, indicesList, normals);
-
-        vertices[0] = new float[vertexList.size() * 2 + texcoordList.size()];
-        indices[0] = new short[indicesList.size()];
-
-        int j = 0;
-        int i = 0;
-        for(; i < vertices[0].length; j ++ ) {
-            vertices[0][i++] = vertexList.get(j * 3);
-            vertices[0][i++] = vertexList.get(j * 3 + 1);
-            vertices[0][i++] = vertexList.get(j * 3 + 2);
-            vertices[0][i++] = normals[j * 3];
-            vertices[0][i++] = normals[j * 3 + 1];
-            vertices[0][i++] = normals[j * 3 + 2];
-            vertices[0][i++] = texcoordList.get(j * 2);
-            vertices[0][i++] = texcoordList.get(j * 2 + 1);
-        }
-        i = 0;
-        for (Short ind : indicesList) {
-            indices[0][i++] = (ind != null ? ind : 0);
+            vert[i] *= factor; vert[i + 1] *= factor; vert[i + 2] *= factor;
         }
     }
 }

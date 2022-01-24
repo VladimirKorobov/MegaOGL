@@ -15,12 +15,33 @@ public class SphereModel extends Model{
     public SphereModel(Shader shader, int level) {
         super(shader);
         earth = new Texture(R.drawable.klipartz);
+        /*
+        earth = new Texture(
+                R.drawable.forest_posz512,
+                R.drawable.forest_posx512,
+                R.drawable.forest_negz512,
+                R.drawable.forest_negx512,
+                R.drawable.forest_posy512,
+                R.drawable.forest_negy512);
+
+         */
+        /*
+        earth = new Texture(
+                R.drawable.earth_posz_512,
+                R.drawable.earth_posx_512,
+                R.drawable.earth_negz_512,
+                R.drawable.earth_negx_512,
+                R.drawable.earth_posy_512,
+                R.drawable.earth_negy_512);
+
+         */
         createBuffers(level);
     }
     private void createBuffers(int level) {
         float[][] vertices = new float[1][];
         short[][] indices = new short[1][];
-        Utils.CalcSphere(vertices, indices, level);
+        //Utils.CalcSphere(vertices, indices, level);
+        Utils.CalcSphereForCube(vertices, indices, level);
         //Utils.CalcRect(vertices, indices);
 
         vertexBuffer = ByteBuffer.allocateDirect(vertices[0].length * Renderer.mBytesPerFloat)
@@ -70,8 +91,6 @@ public class SphereModel extends Model{
 
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indicesBuffer.capacity(), GLES20.GL_UNSIGNED_SHORT, 0);
-        //offset = indicesBuffer.capacity() - 6;
-        //GLES20.glDrawElements(GLES20.GL_TRIANGLES, 6, GLES20.GL_UNSIGNED_SHORT, offset * 2);
 
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);

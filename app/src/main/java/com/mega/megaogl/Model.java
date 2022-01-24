@@ -1,5 +1,6 @@
 package com.mega.megaogl;
 
+import android.graphics.Bitmap;
 import android.opengl.GLES20;
 
 import java.nio.ByteBuffer;
