@@ -38,6 +38,11 @@ public class Utils {
             this.y = y;
             this.z = z;
         }
+        public vect3(vect3 v) {
+            this.x = v.x;
+            this.y = v.y;
+            this.z = v.z;
+        }
         public vect3(double x, double y, double z) {
             this.x = (float)x;
             this.y = (float)y;
@@ -320,6 +325,63 @@ public class Utils {
         }
     }
 
+    public static void CalcSphere(float[][] vertices, short[][] indices, int level) {
+        if(level < 2) return;
+
+        int facePerColumn = level;
+        int facePerLine = level + 1;
+        int vertPerColumn = facePerColumn + 1;
+        int vertPerRow = facePerLine + 1;
+
+        double dTeta = Math.PI / facePerColumn;
+        double dPhi = Math.PI * 2 / facePerLine;
+
+        float dtx = 1.0f / (facePerLine);
+        float dty = 1.0f / (facePerColumn);
+
+        int stride = (3 + 3 + 2);
+        int lineStride = stride * (vertPerRow);
+
+        float[] vert = new float[vertPerColumn * lineStride];
+        short[] ind = new short[facePerColumn * facePerLine * 6];
+        int vertIndex = 0;
+        int indIndex = 0;
+
+        float ty = 0;
+
+        double  teta = Math.PI / 2;
+
+        for(int i_teta = 0; i_teta < vertPerColumn; i_teta ++, teta -= dTeta, ty += dty) {
+            float y = (float)Math.sin(teta);
+            double cosTeta = Math.cos(teta);
+            float tx = 0;
+            double phi = 0;
+            for(int i_phi = 0; i_phi < vertPerRow; i_phi ++, phi += dPhi, tx += dtx) {
+                float x = (float)(Math.cos(phi) * cosTeta);
+                float z = (float)(Math.sin(-phi) * cosTeta);
+                if(i_teta != 0 && i_phi != 0) {
+                    ind[indIndex ++] = (short)((vertIndex - lineStride) / stride -1);
+                    ind[indIndex ++] = (short)(vertIndex / stride - 1);
+                    ind[indIndex ++] = (short)(vertIndex / stride);
+                    ind[indIndex ++] = (short)(vertIndex / stride);
+                    ind[indIndex ++] = (short)((vertIndex - lineStride)/ stride);
+                    ind[indIndex ++] = (short)((vertIndex - lineStride) / stride - 1);
+                }
+                vert[vertIndex ++] = x;
+                vert[vertIndex ++] = y;
+                vert[vertIndex ++] = z;
+                vert[vertIndex ++] = x;
+                vert[vertIndex ++] = y;
+                vert[vertIndex ++] = z;
+                vert[vertIndex ++] = tx;
+                vert[vertIndex ++] = ty;
+            }
+        }
+
+        vertices[0] = vert;
+        indices[0] = ind;
+    }
+
     public static void CalcSphereForCube(float[][] vertices, short[][] indices, int level) {
         level++;
         int stride = 3 + 3 + 2;
@@ -418,6 +480,8 @@ public class Utils {
         List<vect3> distortVectors = new ArrayList<>();
         List<Float> distortValues = new ArrayList<>();
 
+        getDistortValues(distortVectors, distortValues, 16);
+/*
         distortVectors.add(new vect3(0, 0, 1));
         distortValues.add(0.5f);
         distortVectors.add(new vect3(0, 0, -1));
@@ -430,8 +494,6 @@ public class Utils {
         distortValues.add(1.1f);
         distortVectors.add(new vect3(0, -1, 0));
         distortValues.add(1.1f);
-
-
 
         distortVectors.add(new vect3(1, 1, 1).normalize());
         distortValues.add(0.9f);
@@ -446,14 +508,35 @@ public class Utils {
         distortVectors.add(new vect3(-1, 1, 1).normalize());
         distortValues.add(0.5f);
 
-        //Distort(vert, stride, distortVectors, distortValues, 0);
+ */
 
+        //Distort(vert, stride, distortVectors, distortValues, 0);
+        // Correct the same vertices
+        Collection<List<Short>> values = equalVert.map.values();
+        final vect3 n = new vect3();
+        /*
+        for (List<Short> v : values) {
+            if(v.size() == 2 || v.size() == 3) {
+                n.init(0, 0, 0);
+                for (Short index : v) {
+                    offset = index * stride;
+                    vect.init(vert[offset], vert[offset + 1], vert[offset + 2]);
+                    n.add(vect);
+                }
+                n.mult(1.0f/ v.size());
+                for (Short index : v) {
+                    offset = index * stride;
+                    vert[offset] = n.x;
+                    vert[offset + 1] = n.y;
+                    vert[offset + 2] = n.z;
+                }
+            }
+        }
+         */
         CalcNormals(vert, ind, 3, stride);
         vertices[0] = vert;
         indices[0] = ind;
         // correct normals
-        Collection<List<Short>> values = equalVert.map.values();
-        final vect3 n = new vect3();
         for (List<Short> v : values) {
             if(v.size() == 2 || v.size() == 3) {
                 n.init(0, 0, 0);
@@ -480,10 +563,27 @@ public class Utils {
         }
     }
 
+    private static void getDistortValues(List<vect3> distortVectors, List<Float> distortValues, int count) {
+        Random rnd = new Random();
+        rnd.setSeed(1);
+        for(int i = 0; i < count; i ++) {
+            float x = rnd.nextFloat() * 2 - 1;
+            float y = rnd.nextFloat() * 2 - 1;
+            float z = rnd.nextFloat() * 2 - 1;
+            float v = (rnd.nextFloat() - 0.5f) * 0.5f;
+
+            distortVectors.add(new vect3(x, y, z).normalize());
+            distortValues.add(v);
+        }
+    }
+
+
     public static void Distort(float[] vert, int stride, List<vect3> extrems, List<Float> values, int rand) {
         final vect3 vect = new vect3();
         final vect3 vect1 = new vect3();
         Random random = new Random();
+        float sum = 0;
+        float m = 1.0f;
 
         for(int i = 0; i < vert.length; i += stride) {
             vect.init(vert[i], vert[i + 1], vert[i + 2]);
@@ -491,17 +591,23 @@ public class Utils {
             int index = 0;
             int maxIndex = 0;
             float max = 1;
+            /*
             for(vect3 v : extrems) {
                 float f = vect3.dot(v, vect);
 
                 if(f > 0) {
-                    factor += Math.pow(f, 40) * (values.get(index) - 1);
-
+                    factor += Math.pow(f, 40) * values.get(index);
                 }
                 index ++;
             }
             //max = (float)Math.pow(max, 2);
             //factor = (1 + max) /  (extrems.size() + 1);
+
+             */
+
+            sum += (random.nextFloat() - 0.5f) * 0.05f * m;
+            factor += sum;
+            if(sum > 0.5 || sum < -0.5) m = -m;
 
             vert[i] *= factor; vert[i + 1] *= factor; vert[i + 2] *= factor;
         }

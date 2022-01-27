@@ -4,17 +4,28 @@ import android.opengl.GLES20;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.ShortBuffer;
 
 import static android.opengl.GLES20.GL_TEXTURE_2D;
 import static javax.microedition.khronos.opengles.GL10.GL_TEXTURE0;
 
 public class SphereModel extends Model{
 
-    Texture earth;
+    Texture texture;
+    static int[] vbo = new int[] {0};
+    static int[] ibo = new int[] {0};
 
-    public SphereModel(Shader shader, int level) {
+    static FloatBuffer vertexBuffer;
+    static ShortBuffer indicesBuffer;
+
+    public SphereModel(Shader shader, int level, int texId) {
         super(shader);
-        earth = new Texture(R.drawable.klipartz);
+        if(vbo[0] == 0) {
+            createBuffers(level);
+        }
+
+        texture = new Texture(texId);
         /*
         earth = new Texture(
                 R.drawable.forest_posz512,
@@ -35,13 +46,16 @@ public class SphereModel extends Model{
                 R.drawable.earth_negy_512);
 
          */
-        createBuffers(level);
+
     }
     private void createBuffers(int level) {
+        GLES20.glGenBuffers(1, vbo, 0);
+        GLES20.glGenBuffers(1, ibo, 0);
+
         float[][] vertices = new float[1][];
         short[][] indices = new short[1][];
-        //Utils.CalcSphere(vertices, indices, level);
-        Utils.CalcSphereForCube(vertices, indices, level);
+        Utils.CalcSphere(vertices, indices, level);
+        //Utils.CalcSphereForCube(vertices, indices, level);
         //Utils.CalcRect(vertices, indices);
 
         vertexBuffer = ByteBuffer.allocateDirect(vertices[0].length * Renderer.mBytesPerFloat)
@@ -82,7 +96,7 @@ public class SphereModel extends Model{
         offset += 3 * Renderer.mBytesPerFloat;
 
         GLES20.glActiveTexture(GL_TEXTURE0);
-        GLES20.glBindTexture(GL_TEXTURE_2D, earth.textureIds[0]);
+        GLES20.glBindTexture(GL_TEXTURE_2D, texture.textureIds[0]);
         GLES20.glUniform1i(shader.mTextureHandle, 0);
 
         GLES20.glVertexAttribPointer(shader.mTextureHandle, 2, GLES20.GL_FLOAT, false,
