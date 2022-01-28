@@ -6,7 +6,7 @@ import android.util.Log;
 public class Shader {
     private static String kLogTag = "GDC11";
 
-    private int mProgramId;
+    public int mProgramId;
     public int mMVPMatrixHandle;
     public int mLightVectorHandle;
     public int mPositionHandle;

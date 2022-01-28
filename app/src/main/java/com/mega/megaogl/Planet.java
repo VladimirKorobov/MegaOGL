@@ -2,6 +2,8 @@ package com.mega.megaogl;
 
 import android.opengl.Matrix;
 
+import java.util.List;
+
 public class Planet extends SphereModel{
     public Orbit orbit;
     public float speed;
@@ -9,13 +11,15 @@ public class Planet extends SphereModel{
     Utils.vect3 slope;
     float currAngle;
 
-    public Planet(Shader shader, int level, int texId) {
-        super(shader, level, texId);
+    List<Planet> satellites;
+
+    public Planet(int texId) {
+        super(texId);
     }
 
-    public Planet(Shader shader, int level, int texId,
+    public Planet(int texId,
                   Orbit orbit, float speed, float radius, float currAngle, Utils.vect3 slope) {
-        super(shader, level, texId);
+        super(texId);
         this.orbit = new Orbit(orbit);
         this.slope =  new Utils.vect3(slope);
         this.speed = speed;
@@ -23,7 +27,6 @@ public class Planet extends SphereModel{
         this.currAngle = currAngle;
     }
 
-    @Override
     public void updateLocation() {
         orbit.update();
         currAngle += speed;
@@ -51,5 +54,25 @@ public class Planet extends SphereModel{
         Matrix.rotateM(matrix, 0, (float)ang, slope.x, slope.y, slope.z);
         Matrix.rotateM(matrix, 0, (float)currAngle, 0, 1, 0);
         Matrix.scaleM(matrix, 0, radius, radius, radius);
+    }
+    @Override
+    public void update() {
+        super.update();
+        if(satellites != null) {
+            for (Model m : satellites) {
+                m.update();
+            }
+        }
+    }
+
+    @Override
+    public void draw(float[] modelMat, float[] viewMat, float[] projectionMat) {
+        updateLocation();
+        super.draw(modelMat, viewMat, projectionMat);
+        if(satellites != null) {
+            for(Model s: satellites) {
+                s.draw(this.currModel, viewMat, projectionMat);
+            }
+        }
     }
 }

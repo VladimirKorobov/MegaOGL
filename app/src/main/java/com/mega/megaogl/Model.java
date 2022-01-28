@@ -11,17 +11,17 @@ import java.nio.ShortBuffer;
 
 public class Model {
     public float[] matrix = new float[16];
+    public final float[] currModel = new float[16];
 
-    Shader shader;
-    public Model(Shader shader) {
-        this.shader = shader;
+    public Model() {
+        Matrix.setIdentityM(matrix, 0);
+    }
+
+    public void update() {
 
     }
 
-    public void updateLocation() {
-
-    }
-
-    public void draw() {
+    public void draw(float[] modelMat, float[] viewMat, float[] projectionMat) {
+        Matrix.multiplyMM(currModel, 0, modelMat, 0, matrix, 0);
     }
 }

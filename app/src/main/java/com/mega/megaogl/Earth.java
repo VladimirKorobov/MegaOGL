@@ -2,8 +2,8 @@ package com.mega.megaogl;
 
 public class Earth extends Planet {
 
-    public Earth(Shader shader, int level) {
-        super(shader, level, R.drawable.earth1);
+    public Earth() {
+        super(R.drawable.earth1);
         orbit = new Orbit();
         orbit.speed = 0.1f;
         orbit.curAngle = 0;

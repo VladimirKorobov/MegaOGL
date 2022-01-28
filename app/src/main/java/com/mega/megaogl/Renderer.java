@@ -25,13 +25,12 @@ public class Renderer implements GLSurfaceView.Renderer {
     double angle = 0;
     double dAngle = 0.5;
 
-    static Shader shader;
+    Shader shader;
     static Model sphere1;
-    Model sphere2;
-    Model sphere3;
-
 
     public Renderer() {
+        if(sphere1 == null)
+            sphere1 = new SolarSystem();
     }
 
     @Override
@@ -60,15 +59,13 @@ public class Renderer implements GLSurfaceView.Renderer {
         Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
 
         shader = new Shader();
-        shader.use();
         //setupBuffers();
-        sphere1 = new Earth(shader, 16);
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
-
-        //sphere2 = new SphereModel(shader, 2);
-        //sphere3 = new SphereModel(shader, 3);
-
+        shader.use();
+        Renderable.updateShader(shader);
+        SphereModel.createBuffers();
+        sphere1.update();
     }
 
     @Override
@@ -90,102 +87,14 @@ public class Renderer implements GLSurfaceView.Renderer {
         //Matrix.orthoM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
     }
 
-    private static void getNormalMatrix(float[] model4, float[] normal3) {
-        // Create normal matrix
-        final float[] inverseMatrix = new float[9];
-        final float[] model3 = new float[9];
-
-        Utils.mat3(model4, model3);
-        Utils.inverse(model3, inverseMatrix);
-        Utils.transpose(inverseMatrix, normal3);
-        Utils.normalize(normal3);
-    }
-
     @Override
     public void onDrawFrame(GL10 gl10) {
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
         // Draw the triangle facing straight on.
         Matrix.setIdentityM(mModelMatrix, 0);
         final float[] lightDir = new float[] {0, 0, -1};
-        final float[] normalMatrix = new float[9];
-        final Utils.vect3 r = new Utils.vect3(0,1,0).normalize();
-        final Utils.vect3 r1 = new Utils.vect3(1,0,0).normalize();
-        final Utils.vect3 s = new Utils.vect3(0.5f,0.5f,0.5f);
         shader.setLight(lightDir);
 
-        double x = 0.5;
-        double z = 0.5;
-        double a = Math.atan2(z, x) * 180 / Math.PI;
-        sphere1.updateLocation();
-
-        Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.translateM(mModelMatrix, 0, 0, 0f, -20);
-        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
-
-        Matrix.multiplyMM(mModelMatrix, 0, mModelMatrix, 0, sphere1.matrix, 0);
-        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
-        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
-        // Create normal matrix
-        getNormalMatrix(mModelMatrix, normalMatrix);
-        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
-        sphere1.draw();
-/*
-        Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.translateM(mModelMatrix, 0, 0, 0.5f, 0);
-        Matrix.rotateM(mModelMatrix, 0, (float)angle, r.x, r.y, r.z);
-        Matrix.rotateM(mModelMatrix, 0, -90, 1, 0, 0);
-        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
-        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
-        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
-        // Create normal matrix
-        getNormalMatrix(mModelMatrix, normalMatrix);
-        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
-        sphere1.draw();
-        Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.translateM(mModelMatrix, 0, 0, -0.5f, 0);
-        Matrix.rotateM(mModelMatrix, 0, (float)angle, r1.x, r1.y, r1.z);
-        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
-        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
-        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
-        // Create normal matrix
-        getNormalMatrix(mModelMatrix, normalMatrix);
-        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
-        sphere1.draw();
-        
- */
-/*
-        Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.translateM(mModelMatrix, 0, 0, 0, -20);
-        Matrix.rotateM(mModelMatrix, 0, (float)angle, r.x, r.y, r.z);
-        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
-        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
-        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
-        // Create normal matrix
-        getNormalMatrix(mModelMatrix, normalMatrix);
-        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
-        sphere2.draw();
-
-        Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.translateM(mModelMatrix, 0, 0, -0.5f, -20);
-        Matrix.rotateM(mModelMatrix, 0, (float)angle, r.x, r.y, r.z);
-        Matrix.scaleM(mModelMatrix, 0,  s.x, s.y, s.z);
-        Matrix.multiplyMM(mModelViewMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mModelViewMatrix, 0);
-        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
-        // Create normal matrix
-        getNormalMatrix(mModelMatrix, normalMatrix);
-        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
-        sphere3.draw();
-*/
-        /*
-        angle += dAngle;
-        if(angle >= 360)
-            angle = angle - 360;
-
-         */
+        sphere1.draw(mModelMatrix, mViewMatrix, mProjectionMatrix);
     }
 }

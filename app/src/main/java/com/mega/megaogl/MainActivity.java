@@ -22,31 +22,34 @@ import com.mega.megaogl.databinding.ActivityMainBinding;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 
 public class MainActivity extends Activity {
 
     private GLSurfaceView glSurfaceView;
     public static Context appContext;
+    public static Renderer renderer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         appContext = getApplicationContext();
-        glSurfaceView = new GLSurfaceView(this);
 
         final ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         final ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
         final boolean supportsEs2 = configurationInfo.reqGlEsVersion >= 0x20000;
         if (supportsEs2) {
             // Request an OpenGL ES 2.0 compatible context.
+            glSurfaceView = new GLSurfaceView(this);
             glSurfaceView.setEGLContextClientVersion(2);
+            renderer = new Renderer();
+            glSurfaceView.setRenderer(renderer);
 
-            // Set the renderer to our demo renderer, defined below.
-            glSurfaceView.setRenderer(new Renderer());
         } else {
             return;
         }
         setContentView(glSurfaceView);
+
     }
 
     @Override
