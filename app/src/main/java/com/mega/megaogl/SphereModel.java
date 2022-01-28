@@ -13,11 +13,11 @@ import static javax.microedition.khronos.opengles.GL10.GL_TEXTURE0;
 public class SphereModel extends Model{
 
     Texture texture;
-    static int[] vbo = new int[] {0};
-    static int[] ibo = new int[] {0};
+    int[] vbo = new int[] {0};
+    int[] ibo = new int[] {0};
 
-    static FloatBuffer vertexBuffer;
-    static ShortBuffer indicesBuffer;
+    FloatBuffer vertexBuffer;
+    ShortBuffer indicesBuffer;
 
     public SphereModel(Shader shader, int level, int texId) {
         super(shader);
