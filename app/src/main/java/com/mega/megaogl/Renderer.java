@@ -14,10 +14,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class Renderer implements GLSurfaceView.Renderer {
     private float[] mModelMatrix = new float[16];
-    private float[] mModelViewMatrix = new float[16];
-    private float[] mViewMatrix = new float[16];
     private float[] mProjectionMatrix = new float[16];
-    private float[] mMVPMatrix = new float[16];
 
     static final int mBytesPerFloat = 4;
     static final int mBytesPerShort = 2;
@@ -25,47 +22,74 @@ public class Renderer implements GLSurfaceView.Renderer {
     double angle = 0;
     double dAngle = 0.5;
 
-    Shader shader;
-    static Model sphere1;
+    public static Shader shader;
+    static SolarSystem solarSystem;
+    Camera camera = new Camera();
+
+    public static class Buffers {
+        public float[][] vertices = new float[1][];
+        public short[][] indices = new short[1][];
+
+        public int[] vbo = new int[] {0};
+        public int[] ibo = new int[] {0};
+
+        public FloatBuffer vertexBuffer;
+        public ShortBuffer indicesBuffer;
+    }
 
     public Renderer() {
-        if(sphere1 == null)
-            sphere1 = new SolarSystem();
+        if(solarSystem == null) {
+            solarSystem = new SolarSystem();
+        }
+    }
+
+    public static void createBuffers(Buffers buffers) {
+        if(buffers.vbo[0] == 0) {
+            GLES20.glGenBuffers(1, buffers.vbo, 0);
+            int error = GLES20.glGetError();
+            GLES20.glGenBuffers(1, buffers.ibo, 0);
+            error = GLES20.glGetError();
+
+            buffers.vertexBuffer = ByteBuffer.allocateDirect(buffers.vertices[0].length * Renderer.mBytesPerFloat)
+                    .order(ByteOrder.nativeOrder()).asFloatBuffer();
+            error = GLES20.glGetError();
+            buffers.vertexBuffer.put(buffers.vertices[0]).position(0);
+            error = GLES20.glGetError();
+
+            buffers.indicesBuffer = ByteBuffer.allocateDirect(buffers.indices[0].length * Renderer.mBytesPerShort)
+                    .order(ByteOrder.nativeOrder()).asShortBuffer();
+            error = GLES20.glGetError();
+            buffers.indicesBuffer.put(buffers.indices[0]).position(0);
+            error = GLES20.glGetError();
+
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers.vbo[0]);
+            error = GLES20.glGetError();
+            GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, buffers.vertexBuffer.capacity()
+                    * Renderer.mBytesPerFloat, buffers.vertexBuffer, GLES20.GL_STATIC_DRAW);
+            error = GLES20.glGetError();
+
+            GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, buffers.ibo[0]);
+            GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, buffers.indicesBuffer.capacity()
+                    * Renderer.mBytesPerShort, buffers.indicesBuffer, GLES20.GL_STATIC_DRAW);
+
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+            GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
+        }
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
 // Set the background clear color to gray.
         GLES20.glClearColor(0.5f, 0.5f, 0.7f, 1.0f);
-
-        // Position the eye behind the origin.
-        final float eyeX = 0.0f;
-        final float eyeY = 0.0f;
-        final float eyeZ = 1f;
-
-        // We are looking toward the distance
-        final float lookX = 0.0f;
-        final float lookY = 0.0f;
-        final float lookZ = -100.0f;
-
-        // Set our up vector. This is where our head would be pointing were we holding the camera.
-        final float upX = 0.0f;
-        final float upY = 1.0f;
-        final float upZ = 0.0f;
-
-        // Set the view matrix. This matrix can be said to represent the camera position.
-        // NOTE: In OpenGL 1, a ModelView matrix is used, which is a combination of a model and
-        // view matrix. In OpenGL 2, we can keep track of these matrices separately if we choose.
-        Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
-
         shader = new Shader();
         //setupBuffers();
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
         shader.use();
-        Renderable.updateShader(shader);
-        SphereModel.createBuffers();
-        sphere1.update();
+        Matrix.setIdentityM(mModelMatrix, 0);
+        // Update model matrices
+        solarSystem.draw(mModelMatrix, null, null);
+        camera.parent = solarSystem.cameraOwner;
     }
 
     @Override
@@ -94,7 +118,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         Matrix.setIdentityM(mModelMatrix, 0);
         final float[] lightDir = new float[] {0, 0, -1};
         shader.setLight(lightDir);
-
-        sphere1.draw(mModelMatrix, mViewMatrix, mProjectionMatrix);
+        camera.update();
+        solarSystem.draw(mModelMatrix, camera.mViewMatrix, mProjectionMatrix);
     }
 }

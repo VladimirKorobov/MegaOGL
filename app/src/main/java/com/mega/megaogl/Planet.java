@@ -10,11 +10,17 @@ public class Planet extends SphereModel{
     float radius;
     Utils.vect3 slope;
     float currAngle;
+    float mass;
 
     List<Planet> satellites;
+    Planet parent;
 
     public Planet(int texId) {
         super(texId);
+    }
+    public Planet(Planet parent, int texId) {
+        super(texId);
+        this.parent = parent;
     }
 
     public Planet(int texId,
@@ -34,45 +40,47 @@ public class Planet extends SphereModel{
         Matrix.setIdentityM(matrix, 0);
         Matrix.setIdentityM(m, 0);
         final Utils.vect3 y = new Utils.vect3(0, 1, 0);
-        final Utils.vect3 x = new Utils.vect3();
-        x.init(1, 0, 0);
+        final Utils.vect3 towardPoint = new Utils.vect3();
+        towardPoint.init(0, 0, 0);
 
         // Rotate to orbit plane
         Utils.vect3 rotationPlane = Utils.vect3.cross(y, orbit.plane);
         float ang = (float)(Math.asin(rotationPlane.length()) * 180 / Math.PI);
         rotationPlane.normalize();
+
+        if(parent != null) {
+            // Move to the parent
+            towardPoint.matrixMult(parent.matrix);
+            Matrix.translateM(m, 0, towardPoint.x, towardPoint.y, towardPoint.z);
+            towardPoint.init(0, 0, 0);
+        }
+
         Matrix.rotateM(m, 0, ang, rotationPlane.x, rotationPlane.y, rotationPlane.z);
         Matrix.rotateM(m, 0, orbit.curAngle, y.x, y.y, y.z);
         Matrix.translateM(m, 0, orbit.radius, 0, 0);
-        x.matrixMult(m);
+
+        towardPoint.matrixMult(m);
 
         // Rotate to planet plane
         rotationPlane = Utils.vect3.cross(y, slope);
         ang = (float)(Math.asin(rotationPlane.length()) * 180 / Math.PI);
         rotationPlane.normalize();
-        Matrix.translateM(matrix, 0, x.x, x.y, x.z);
+
+        // move to orbit trajectory
+        Matrix.translateM(matrix, 0, towardPoint.x, towardPoint.y, towardPoint.z);
         Matrix.rotateM(matrix, 0, (float)ang, slope.x, slope.y, slope.z);
         Matrix.rotateM(matrix, 0, (float)currAngle, 0, 1, 0);
         Matrix.scaleM(matrix, 0, radius, radius, radius);
     }
-    @Override
-    public void update() {
-        super.update();
-        if(satellites != null) {
-            for (Model m : satellites) {
-                m.update();
-            }
-        }
-    }
 
     @Override
     public void draw(float[] modelMat, float[] viewMat, float[] projectionMat) {
-        updateLocation();
         super.draw(modelMat, viewMat, projectionMat);
         if(satellites != null) {
             for(Model s: satellites) {
-                s.draw(this.currModel, viewMat, projectionMat);
+                s.draw(modelMat, viewMat, projectionMat);
             }
         }
+        updateLocation();
     }
 }

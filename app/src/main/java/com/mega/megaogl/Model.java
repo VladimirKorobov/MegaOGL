@@ -17,10 +17,6 @@ public class Model {
         Matrix.setIdentityM(matrix, 0);
     }
 
-    public void update() {
-
-    }
-
     public void draw(float[] modelMat, float[] viewMat, float[] projectionMat) {
         Matrix.multiplyMM(currModel, 0, modelMat, 0, matrix, 0);
     }

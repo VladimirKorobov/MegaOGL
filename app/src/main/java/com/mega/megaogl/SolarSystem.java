@@ -7,20 +7,15 @@ import java.util.List;
 
 public class SolarSystem extends Model {
     private List<Model> items = new ArrayList<>();
+    public Model cameraOwner;
 
     public SolarSystem() {
         final Utils.vect3 s = new Utils.vect3(0.5f,0.5f,0.5f);
         Matrix.translateM(matrix, 0, 0, 0f, -20);
         Matrix.scaleM(matrix, 0,  s.x, s.y, s.z);
 
-        items.add(new Earth());
-    }
-    @Override
-    public void update() {
-        super.update();
-        for(Model m: items) {
-            m.update();
-        }
+        cameraOwner = new Earth();
+        items.add(cameraOwner);
     }
 
     @Override

@@ -4,7 +4,6 @@ import android.opengl.GLES20;
 import android.opengl.Matrix;
 
 public class Renderable extends Model {
-    static Shader shader;
     private static void getNormalMatrix(float[] model4, float[] normal3) {
         // Create normal matrix
         final float[] inverseMatrix = new float[9];
@@ -15,22 +14,18 @@ public class Renderable extends Model {
         Utils.transpose(inverseMatrix, normal3);
         Utils.normalize(normal3);
     }
-    public static void updateShader(Shader shader_) {
-        shader = shader_;
-    }
-    @Override
-    public void update() {
-        super.update();
-    }
     @Override
     public void draw(float[] modelMat, float[] viewMat, float[] projectionMat) {
         super.draw(modelMat,viewMat,projectionMat);
+        if(viewMat == null || projectionMat == null)
+            return;
         final float[] normalMatrix = new float[9];
+        final float[] mat = new float[16];
         // Create normal matrix
         getNormalMatrix(currModel, normalMatrix);
-        Matrix.multiplyMM(currModel, 0, viewMat, 0, currModel, 0);
-        Matrix.multiplyMM(currModel, 0, projectionMat, 0, currModel, 0);
-        GLES20.glUniformMatrix4fv(shader.mMVPMatrixHandle, 1, false, currModel, 0);
-        GLES20.glUniformMatrix3fv(shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
+        Matrix.multiplyMM(mat, 0, viewMat, 0, currModel, 0);
+        Matrix.multiplyMM(mat, 0, projectionMat, 0, mat, 0);
+        GLES20.glUniformMatrix4fv(Renderer.shader.mMVPMatrixHandle, 1, false, mat, 0);
+        GLES20.glUniformMatrix3fv(Renderer.shader.mNormalMatrixHandle, 1, false, normalMatrix, 0);
     }
 }
