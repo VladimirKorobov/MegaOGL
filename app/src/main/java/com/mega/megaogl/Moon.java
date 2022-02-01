@@ -7,10 +7,10 @@ public class Moon extends Planet{
         orbit.speed = 0.5f;
         orbit.curAngle = 0;
         orbit.center = 0;
-        orbit.radius = 2.5f;
+        orbit.radius = 8900f;//385000f;
         orbit.plane = new Utils.vect3(0.1f,1, 0.1f).normalize();
         speed = 0.1f;
-        radius = 0.333333f;
+        radius = 1737;
         currAngle = 0;
         slope = new Utils.vect3(0f,1f,0f).normalize();
     }

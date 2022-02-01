@@ -24,10 +24,12 @@ import com.mega.megaogl.databinding.ActivityMainBinding;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 
 public class MainActivity extends Activity {
 
-    private GLSurfaceView glSurfaceView;
+    private OGLView glSurfaceView;
     public static Context appContext;
     public static Renderer renderer;
 
@@ -40,12 +42,16 @@ public class MainActivity extends Activity {
         final ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
         final boolean supportsEs2 = configurationInfo.reqGlEsVersion >= 0x20000;
         this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
         if (supportsEs2) {
             // Request an OpenGL ES 2.0 compatible context.
-            glSurfaceView = new GLSurfaceView(this);
+            glSurfaceView = new OGLView(this);
             glSurfaceView.setEGLContextClientVersion(2);
             renderer = new Renderer();
             glSurfaceView.setRenderer(renderer);
+            glSurfaceView.setRemoteControl(renderer.remoteControl);
 
         } else {
             return;

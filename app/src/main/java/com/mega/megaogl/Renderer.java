@@ -4,6 +4,8 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
+import com.mega.megaogl.shaders.ShaderMain;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -15,6 +17,7 @@ import javax.microedition.khronos.opengles.GL10;
 public class Renderer implements GLSurfaceView.Renderer {
     private float[] mModelMatrix = new float[16];
     private float[] mProjectionMatrix = new float[16];
+    private float[] mOrthoMatrix = new float[16];
 
     static final int mBytesPerFloat = 4;
     static final int mBytesPerShort = 2;
@@ -22,9 +25,10 @@ public class Renderer implements GLSurfaceView.Renderer {
     double angle = 0;
     double dAngle = 0.5;
 
-    public static Shader shader;
+    public static ShaderMain shader;
     static SolarSystem solarSystem;
     Camera camera = new Camera();
+    public RemoteControl remoteControl = new RemoteControl();
 
     public static class Buffers {
         public float[][] vertices = new float[1][];
@@ -81,12 +85,15 @@ public class Renderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
 // Set the background clear color to gray.
         GLES20.glClearColor(0.5f, 0.5f, 0.7f, 1.0f);
-        shader = new Shader();
+        shader = new ShaderMain();
         //setupBuffers();
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
         shader.use();
         Matrix.setIdentityM(mModelMatrix, 0);
+
+        remoteControl.initialize();
+
         // Update model matrices
         solarSystem.draw(mModelMatrix, null, null);
         camera.parent = solarSystem.cameraOwner;
@@ -104,11 +111,15 @@ public class Renderer implements GLSurfaceView.Renderer {
         final float right = ratio;
         final float bottom = -1.0f;
         final float top = 1.0f;
-        final float near = 10f;
+        final float near = 2f;
         final float far = 100000.0f;
 
         Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
-        //Matrix.orthoM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
+        Matrix.orthoM(mOrthoMatrix, 0, left, right, bottom, top, near, far);
+    }
+
+    void drawControl() {
+
     }
 
     @Override
@@ -118,7 +129,12 @@ public class Renderer implements GLSurfaceView.Renderer {
         Matrix.setIdentityM(mModelMatrix, 0);
         final float[] lightDir = new float[] {0, 0, -1};
         shader.setLight(lightDir);
-        camera.update();
-        solarSystem.draw(mModelMatrix, camera.mViewMatrix, mProjectionMatrix);
+
+        remoteControl.drawPanel();
+        remoteControl.update();
+        shader.use();
+        solarSystem.draw(mModelMatrix, remoteControl.mViewMatrix, mProjectionMatrix);
+        //camera.update();
+        //solarSystem.draw(mModelMatrix, camera.mViewMatrix, mProjectionMatrix);
     }
 }

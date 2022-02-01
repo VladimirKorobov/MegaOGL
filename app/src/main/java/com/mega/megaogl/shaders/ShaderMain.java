@@ -1,12 +1,12 @@
-package com.mega.megaogl;
+package com.mega.megaogl.shaders;
 
 import android.opengl.GLES20;
-import android.util.Log;
 
-public class Shader {
+import com.mega.megaogl.shaders.Shader;
+
+public class ShaderMain extends Shader {
     private static String kLogTag = "GDC11";
 
-    public int mProgramId;
     public int mMVPMatrixHandle;
     public int mLightVectorHandle;
     public int mPositionHandle;
@@ -15,9 +15,8 @@ public class Shader {
     public int mNormalMatrixHandle;
     public int mTextureHandle;
 
-    public Shader() {
-        mProgramId = loadProgram(vertexShader, fragmentShader);
-        GLES20.glLinkProgram(mProgramId);
+    public ShaderMain() {
+        super(vertexShader, fragmentShader);
 
         mMVPMatrixHandle = GLES20.glGetUniformLocation(mProgramId, "u_MVPMatrix");
         mLightVectorHandle = GLES20.glGetUniformLocation(mProgramId, "a_LightDir");
@@ -27,58 +26,11 @@ public class Shader {
         mNormalMatrixHandle = GLES20.glGetUniformLocation(mProgramId, "u_NormalMatrix");
         mTextureHandle = GLES20.glGetUniformLocation(mProgramId, "u_ShapeTexture");
     }
-    private static int getShader(String source, int type) {
-        int shader = GLES20.glCreateShader(type);
-        if (shader != 0) {
-            GLES20.glShaderSource(shader, source);
-            GLES20.glCompileShader(shader);
-            int[] compiled = {0};
-            GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compiled, 0);
-            if (compiled[0] == 0) {
-                GLES20.glDeleteShader(shader);
-                shader = 0;
-            }
-        }
-        if (shader == 0)
-        {
-            throw new RuntimeException("Error creating vertex shader.");
-        }
-        return shader;
-    }
-
-    public static int loadProgram(String vertexShader,
-                                  String fragmentShader) {
-        int vs = getShader(vertexShader, GLES20.GL_VERTEX_SHADER);
-        int fs = getShader(fragmentShader, GLES20.GL_FRAGMENT_SHADER);
-        if (vs == 0 || fs == 0) return 0;
-
-        int program = GLES20.glCreateProgram();
-        if(program != 0) {
-            GLES20.glAttachShader(program, vs);
-            GLES20.glAttachShader(program, fs);
-            GLES20.glLinkProgram(program);
-
-            int[] linked = { 0 };
-            GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linked, 0);
-            if (linked[0] == 0) {
-                GLES20.glDeleteProgram(program);
-                program = 0;
-            }
-        }
-        if (program == 0)
-        {
-            throw new RuntimeException("Error creating program.");
-        }
-        return program;
-    }
-    public void use() {
-        GLES20.glUseProgram(mProgramId);
-    }
     public void setLight(float[] lightVector) {
         GLES20.glUniform3fv(mLightVectorHandle, 1, lightVector, 0);
     }
 
-    final String vertexShader =
+    final static String vertexShader =
             "uniform mat4 u_MVPMatrix;\n"
                     + "uniform mat3 u_NormalMatrix;\n"
                     + "uniform vec3 a_LightDir;\n"
@@ -99,7 +51,7 @@ public class Shader {
                     + "   light = max(-dot(v_Normal, a_LightDir) * 1.5f, 0.0f);\n"
                     + "   v_TexCoord = a_TexCoord; \n"
                     + "}\n";
-    final String fragmentShader =
+    final static String fragmentShader =
             "varying vec3 v_Normal;\n"
                     + "varying vec2 v_TexCoord;\n"
                     + "uniform sampler2D u_ShapeTexture;\n"

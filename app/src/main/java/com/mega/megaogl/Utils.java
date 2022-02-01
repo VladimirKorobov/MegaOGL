@@ -52,6 +52,10 @@ public class Utils {
             return new vect3(u.y*v.z - u.z*v.y, u.z*v.x - u.x*v.z, u.x*v.y - u.y*v.x);
         }
 
+        public vect3 cross(vect3 v) {
+            return init(this.y*v.z - this.z*v.y, this.z*v.x - this.x*v.z, this.x*v.y - this.y*v.x);
+        }
+
         public static float dot(vect3 u, vect3 v) { return (u.x*v.x + u.y*v.y + u.z*v.z); }
         public static vect3 mult(vect3 u,float v) { return new vect3(u.x*v,u.y*v,u.z*v); }
         public vect3 mult(float v) {
@@ -62,6 +66,10 @@ public class Utils {
         public static vect3 sum(vect3 u, vect3 v) { return new vect3(u.x + v.x, u.y + v.y, u.z + v.z); }
         public vect3 add(vect3 v) {
             this.x += v.x; this.y += v.y; this.z += v.z;
+            return this;
+        }
+        public vect3 subt(vect3 v) {
+            this.x -= v.x; this.y -= v.y; this.z -= v.z;
             return this;
         }
         public static float length(vect3 u) { return (float)Math.sqrt(u.x*u.x + u.y*u.y + u.z*u.z); }
@@ -75,6 +83,7 @@ public class Utils {
             return this;
         }
         public vect3 init(float x, float y, float z) {this.x = x; this.y = y; this.z = z; return this; }
+        public vect3 init(vect3 v) {this.x = v.x; this.y = v.y; this.z = v.z; return this; }
 
         public static vect3 matrixMult(float[] mat, vect3 u) {
             vect3 v = new vect3();

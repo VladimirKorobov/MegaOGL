@@ -61,29 +61,12 @@ public class SphereModel extends Renderable{
         }
         int offset = 0;
         int stride = (3 + 3 + 2) * Renderer.mBytesPerFloat;
-        String s;
 
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
-        int error = GLES20.glGetError();
-        int l = GLES20.glGetUniformLocation(Renderer.shader.mProgramId, "u_MVPMatrix");
-        if(l != Renderer.shader.mMVPMatrixHandle)
-            Renderer.shader.mMVPMatrixHandle = l;
-
-        if(error != 0) {
-            error = GLES20.glGetError();
-        }
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers.vbo[0]);
 
-        error = GLES20.glGetError();
-        if(error != 0) {
-            error = GLES20.glGetError();
-        }
-
         GLES20.glEnableVertexAttribArray(Renderer.shader.mPositionHandle);
-        error = GLES20.glGetError();
         GLES20.glVertexAttribPointer(Renderer.shader.mPositionHandle, 3, GLES20.GL_FLOAT, false,
                 stride, offset);
-        error = GLES20.glGetError();
         offset += 3 * Renderer.mBytesPerFloat;
 
         GLES20.glVertexAttribPointer(Renderer.shader.mNormalHandle, 3, GLES20.GL_FLOAT, false,

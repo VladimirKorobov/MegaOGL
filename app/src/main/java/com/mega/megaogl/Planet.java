@@ -76,11 +76,13 @@ public class Planet extends SphereModel{
     @Override
     public void draw(float[] modelMat, float[] viewMat, float[] projectionMat) {
         super.draw(modelMat, viewMat, projectionMat);
+        /*
         if(satellites != null) {
             for(Model s: satellites) {
                 s.draw(modelMat, viewMat, projectionMat);
             }
         }
+         */
         updateLocation();
     }
 }
