@@ -21,6 +21,7 @@ public class OGLView extends GLSurfaceView {
     float controlRadius;
     private RemoteControl remoteControl;
 
+    int buttonNumber;
     boolean startLeftClick = false;
     boolean startRightClick = false;
 
@@ -46,6 +47,16 @@ public class OGLView extends GLSurfaceView {
                 controlRadius * controlRadius;
     }
 
+    private int insideButton(float x, float y) {
+        float[] f = remoteControl.buttonViewCoord;
+        for(int i = 0; i < f.length; i += 2) {
+            if((f[i] - x) * (f[i] - x) + (f[i + 1] - y) * (f[i + 1] - y) <=
+            remoteControl.buttonViewSize * remoteControl.buttonViewSize)
+            return i / 2;
+        }
+        return - 1;
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent m) {
 
@@ -59,14 +70,10 @@ public class OGLView extends GLSurfaceView {
                 pointer0Id = m.getPointerId(0);
                 pointer0X = x0;
                 pointer0Y = y0;
-
-                startLeftClick = false;
-                startRightClick =  false;
-                if(inside(x0, y0, speedUp))
-                    startLeftClick = true;
-                else if(inside(x0, y0, speedDown))
-                    startRightClick = true;
-                startClickTime = Calendar.getInstance().getTimeInMillis();
+                buttonNumber = insideButton(x0, y0);
+                if(buttonNumber > -1) {
+                    startClickTime = Calendar.getInstance().getTimeInMillis();
+                }
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
@@ -112,13 +119,18 @@ public class OGLView extends GLSurfaceView {
                 case MotionEvent.ACTION_UP:
                 long clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
                 if(clickDuration < MAX_CLICK_DURATION) {
-                    if(startLeftClick)
-                        remoteControl.speedInc();
-                    else if(startRightClick)
-                        remoteControl.speedDec();
+                    switch (buttonNumber) {
+                        case RemoteControl.SPEED_UP:
+                            remoteControl.speedInc();
+                            break;
+                        case RemoteControl.SPEED_DOWN:
+                            remoteControl.speedDec();
+                            break;
+                        default:
+                            break;
+                    }
                 }
-                startLeftClick = false;
-                startRightClick =  false;
+                buttonNumber = -1;
                 break;
         }
         return true;

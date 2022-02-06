@@ -14,26 +14,43 @@ import static android.opengl.GLES20.GL_TEXTURE0;
 import static android.opengl.GLES20.GL_TEXTURE_2D;
 
 public class Texture {
-    int[] textureIds = new int[1];
+    int[] textureIds;
 
     public Texture(int posz, int posx, int negz, int negx, int posy, int negy) {
         Bitmap bitmap = buildGubeBitmap(posz, posx, negz, negx, posy, negy);
-        createTexture(bitmap);
+        GLES20.glGenTextures(1, textureIds, 0);
+        createTexture(bitmap, 0);
         bitmap.recycle();
     }
     public Texture(int id) {
+        textureIds = new int[1];
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inScaled = false;
         final Bitmap bitmap = BitmapFactory.decodeResource(
                 MainActivity.appContext.getResources(), id, options);
-        createTexture(bitmap);
+        GLES20.glGenTextures(1, textureIds, 0);
+        createTexture(bitmap, 0);
         bitmap.recycle();
     }
 
-    private void createTexture(Bitmap bitmap) {
-        GLES20.glGenTextures(1, textureIds, 0);
+    public Texture(int[] Ids) {
+        textureIds = new int[Ids.length];
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inScaled = false;
+        GLES20.glGenTextures(textureIds.length, textureIds, 0);
+        int index = 0;
+        for(int Id : Ids) {
+            Bitmap bitmap = BitmapFactory.decodeResource(
+                    MainActivity.appContext.getResources(), Id, options);
+            createTexture(bitmap, index);
+            bitmap.recycle();
+            index ++;
+        }
+    }
+
+    private void createTexture(Bitmap bitmap, int index) {
         GLES20.glActiveTexture(GL_TEXTURE0);
-        GLES20.glBindTexture(GL_TEXTURE_2D, textureIds[0]);
+        GLES20.glBindTexture(GL_TEXTURE_2D, textureIds[index]);
 
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);

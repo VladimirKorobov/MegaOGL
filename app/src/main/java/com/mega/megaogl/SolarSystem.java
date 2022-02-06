@@ -10,7 +10,7 @@ public class SolarSystem extends Model {
     public Model cameraOwner;
 
     public SolarSystem() {
-        float f = 1.0f;// / 6371;
+        float f = 2.0f;// / 6371;
         float dist = 6371 + 6371;
         final Utils.vect3 s = new Utils.vect3(f,f,f);
         Matrix.translateM(matrix, 0, 0, 0f, -dist);

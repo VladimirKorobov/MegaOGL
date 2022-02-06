@@ -88,7 +88,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         shader = new ShaderMain();
         //setupBuffers();
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-        GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glDisable(GLES20.GL_CULL_FACE);
         shader.use();
         Matrix.setIdentityM(mModelMatrix, 0);
 
@@ -111,7 +111,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         final float right = ratio;
         final float bottom = -1.0f;
         final float top = 1.0f;
-        final float near = 2f;
+        final float near = 1f;
         final float far = 100000.0f;
 
         Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
@@ -130,10 +130,12 @@ public class Renderer implements GLSurfaceView.Renderer {
         final float[] lightDir = new float[] {0, 0, -1};
         shader.setLight(lightDir);
 
-        remoteControl.drawPanel();
-        remoteControl.update();
         shader.use();
         solarSystem.draw(mModelMatrix, remoteControl.mViewMatrix, mProjectionMatrix);
+
+        remoteControl.drawPanel();
+        remoteControl.update();
+
         //camera.update();
         //solarSystem.draw(mModelMatrix, camera.mViewMatrix, mProjectionMatrix);
     }

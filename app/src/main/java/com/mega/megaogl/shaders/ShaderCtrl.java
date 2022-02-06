@@ -33,7 +33,7 @@ public class ShaderCtrl extends Shader {
                     + "void main()\n"
                     + "{\n"
                     + "vec4 col = texture2D(u_Texture, v_TexCoord);\n"
-                            + "if (col.a < 0.5f) discard;\n"
+                    //        + "if (col.a < 0.5f) discard;\n"
                     // + "vec3 col = vec3(1.0f, 1.0f, 1.0f) * 0.5f;\n"
                     + "gl_FragColor = col;\n"
                     + "}\n";

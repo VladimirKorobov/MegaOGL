@@ -48,7 +48,8 @@ public class ShaderMain extends Shader {
                     + "   v_Color = a_Color;\n"
                     + "   gl_Position = u_MVPMatrix * a_Position;\n"
                     + "   v_Normal = u_NormalMatrix * a_Normal;\n"
-                    + "   light = max(-dot(v_Normal, a_LightDir) * 1.5f, 0.0f);\n"
+                    + "   light = -dot(v_Normal, a_LightDir);\n"
+                    + "   if(light < 0.0f) light = -light; \n"
                     + "   v_TexCoord = a_TexCoord; \n"
                     + "}\n";
     final static String fragmentShader =

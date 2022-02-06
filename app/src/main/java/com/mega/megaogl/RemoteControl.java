@@ -1,11 +1,15 @@
 package com.mega.megaogl;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 
 import com.mega.megaogl.shaders.ShaderCtrl;
 
 import static android.opengl.GLES20.GL_TEXTURE_2D;
+import static android.opengl.GLES31.GL_TEXTURE_HEIGHT;
+import static android.opengl.GLES31.GL_TEXTURE_WIDTH;
 import static javax.microedition.khronos.opengles.GL10.GL_TEXTURE0;
 
 public class RemoteControl {
@@ -23,11 +27,18 @@ public class RemoteControl {
     public OGLView view;
 
     Renderer.Buffers buffers;
-    Texture texture;
+    Texture buttonTex;
+    Texture digitsTex;
+
+    float digitWidth;
+    float digitHeight;
+
     ShaderCtrl shader;
     final float buttonSize = 0.2f;
+    public float buttonViewSize;
 
     public float[] buttonCoord;
+    public float[] buttonViewCoord;
 
     public RemoteControl() {
     }
@@ -70,7 +81,7 @@ public class RemoteControl {
         Matrix.multiplyMM(panelMatrix, 0, panelOrthoMatrix, 0, panelMatrix, 0);
     }
     private void createButtom() {
-        texture = new Texture(R.drawable.button1);
+        buttonTex = new Texture(R.drawable.button2);
         float[] vert = new float[] {
                 -1, 1, 0, 0, 0,
                 -1, -1, 0, 0, 1,
@@ -87,26 +98,75 @@ public class RemoteControl {
         Renderer.createBuffers(buffers);
     }
 
+    private void createDigits() {
+        Bitmap bitmap = BitmapFactory.decodeResource(
+                MainActivity.appContext.getResources(), digitId[0], null);
+        digitWidth = bitmap.getWidth();
+        digitHeight = bitmap.getHeight();
+        bitmap.recycle();
+
+        digitsTex = new Texture(digitId);
+    }
+
     public void initialize() {
         shader =  new ShaderCtrl();
         createMatrix();
         createButtom();
     }
 
-    public void sizeChanged(float width, float height) {
-        float factor = (float)view.width / view.height;
-        final float[] coord = new float[] {
-                1 * buttonSize - factor, 2 * buttonSize,
-                1 * buttonSize - factor, 3 * buttonSize - 1,
-                -2 * buttonSize + factor, 2 * buttonSize,
-                -2 * buttonSize + factor, 3 * buttonSize - 1,
-                -3 * buttonSize + factor, 0,
-                -1 * buttonSize + factor, 0
-        };
-        buttonCoord = coord;
+    public static final int SPEED_UP = 0;
+    public static final int SPEED_DOWN = 1;
+    public static final int DIR_DOWN = 2;
+    public static final int DIR_UP = 3;
+    public static final int DIR_LEFT = 4;
+    public static final int DIR_RIGHT = 5;
 
+    private static final int[] digitId = {
+            R.drawable.digit0,
+            R.drawable.digit1,
+            R.drawable.digit2,
+            R.drawable.digit3,
+            R.drawable.digit4,
+            R.drawable.digit5,
+            R.drawable.digit6,
+            R.drawable.digit7,
+            R.drawable.digit8,
+            R.drawable.digit9,
+            R.drawable.digitp
+    };
+
+
+    public void sizeChanged(float width, float height) {
+        float factor = (float)width / height;
+        final float[] coord = new float[] {
+                1 * buttonSize - factor, 2 * buttonSize, // 0, speed up
+                1 * buttonSize - factor, 3 * buttonSize - 1, // 1, speed down
+                -2 * buttonSize + factor, 2 * buttonSize, // 2, down
+                -2 * buttonSize + factor, 3 * buttonSize - 1, // 3, up
+                -3 * buttonSize + factor, 0, // 4, left
+                -1 * buttonSize + factor, 0 // 5, right
+        };
+
+        final float[] coordInView = new float[coord.length];
+        for(int i = 0; i < coordInView.length; i += 2) {
+            coordInView[i] = coord[i] / factor * (width / 2) + width / 2;
+            coordInView[i + 1] = -coord[i + 1] * (height / 2) + height / 2;
+        }
+
+        buttonCoord = coord;
+        buttonViewCoord = coordInView;
+        buttonViewSize = buttonSize * height;
+    }
+    private void drawNumber(float number, int precision, float x, float y) {
+        String s = String.format("%.2f", number);
+        float scale = digitWidth / digitHeight;
+        for(char ch: s.toCharArray()) {
+            int textureId = ch - '0';
+        }
     }
     public void drawPanel() {
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         shader.use();
         drawButtons(buttonCoord);
 
@@ -123,7 +183,7 @@ public class RemoteControl {
 
         offset += 3 * Renderer.mBytesPerFloat;
         GLES20.glActiveTexture(GL_TEXTURE0);
-        GLES20.glBindTexture(GL_TEXTURE_2D, texture.textureIds[0]);
+        GLES20.glBindTexture(GL_TEXTURE_2D, buttonTex.textureIds[0]);
         GLES20.glUniform1i(shader.mTextureHandle, 0);
 
         GLES20.glVertexAttribPointer(shader.mTextureHandle, 2, GLES20.GL_FLOAT, false,
@@ -163,7 +223,7 @@ public class RemoteControl {
 
         offset += 3 * Renderer.mBytesPerFloat;
         GLES20.glActiveTexture(GL_TEXTURE0);
-        GLES20.glBindTexture(GL_TEXTURE_2D, texture.textureIds[0]);
+        GLES20.glBindTexture(GL_TEXTURE_2D, buttonTex.textureIds[0]);
         GLES20.glUniform1i(shader.mTextureHandle, 0);
 
         GLES20.glVertexAttribPointer(shader.mTextureHandle, 2, GLES20.GL_FLOAT, false,
@@ -203,21 +263,16 @@ public class RemoteControl {
         final Utils.vect3 inc = new Utils.vect3();
         final Utils.vect3 look = new Utils.vect3();
 /*
-        // correct up/down
-        float updown = ((view.leftPos.y + view.rightPos.y) / 2 - view.center.y) * 0.1f;
-        speedUpDown(updown);
         // correct right/left
         float rightleft = (view.leftPos.y - view.rightPos.y) * 0.1f;
         speedRightLeft(rightleft);
-
+*/
         // Update position
         inc.init(dir).mult(-speed);
         pos.add(inc);
 
         look.init(dir).mult(-1);
         Matrix.setLookAtM(mViewMatrix, 0, pos.x, pos.y, pos.z, look.x, look.y, look.z, up.x, up.y, up.z);
-
- */
     }
     void draw() {
 
