@@ -3,6 +3,7 @@ package com.mega.megaogl;
 import android.content.Context;
 import android.graphics.PointF;
 import android.opengl.GLSurfaceView;
+import android.os.Handler;
 import android.view.MotionEvent;
 
 import java.util.Calendar;
@@ -32,6 +33,29 @@ public class OGLView extends GLSurfaceView {
     float pointer0Y;
     float pointer1X;
     float pointer1Y;
+
+    final Handler handler = new Handler();
+    Runnable mLongPressed = new Runnable() {
+        public void run() {
+            switch (buttonNumber) {
+                case RemoteControl.SPEED_UP:
+                    remoteControl.speedInc();
+                    break;
+                case RemoteControl.SPEED_DOWN:
+                    remoteControl.speedDec();
+                    break;
+                case RemoteControl.DIR_LEFT:
+                    remoteControl.speedRightLeft(-0.1f);
+                    break;
+                case RemoteControl.DIR_RIGHT:
+                    remoteControl.speedRightLeft(0.1f);
+                    break;
+                default:
+                    break;
+            }
+            handler.postDelayed(this, 200);
+        }
+    };
 
     public OGLView(Context context) {
         super(context);
@@ -73,6 +97,7 @@ public class OGLView extends GLSurfaceView {
                 buttonNumber = insideButton(x0, y0);
                 if(buttonNumber > -1) {
                     startClickTime = Calendar.getInstance().getTimeInMillis();
+                    handler.postDelayed(mLongPressed, 1000);
                 }
                 break;
 
@@ -116,7 +141,8 @@ public class OGLView extends GLSurfaceView {
                         }
                     }
                 }
-                case MotionEvent.ACTION_UP:
+                break;
+            case MotionEvent.ACTION_UP:
                 long clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
                 if(clickDuration < MAX_CLICK_DURATION) {
                     switch (buttonNumber) {
@@ -126,10 +152,17 @@ public class OGLView extends GLSurfaceView {
                         case RemoteControl.SPEED_DOWN:
                             remoteControl.speedDec();
                             break;
+                        case RemoteControl.DIR_LEFT:
+                            remoteControl.speedRightLeft(-0.1f);
+                            break;
+                        case RemoteControl.DIR_RIGHT:
+                            remoteControl.speedRightLeft(0.1f);
+                            break;
                         default:
                             break;
                     }
                 }
+                handler.removeCallbacks(mLongPressed);
                 buttonNumber = -1;
                 break;
         }
