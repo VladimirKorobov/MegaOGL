@@ -16,7 +16,7 @@ public class SphereModel extends Renderable{
     Texture texture;
     static Renderer.Buffers buffers = new Renderer.Buffers();
 
-    public static int sphereLevel = 30;
+    public static int sphereLevel = 64;
     private int texId;
 
     public SphereModel(int texId) {

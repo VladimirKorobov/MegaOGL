@@ -33,6 +33,12 @@ public class Texture {
         bitmap.recycle();
     }
 
+    public Texture(Bitmap bitmap) {
+        textureIds = new int[1];
+        GLES20.glGenTextures(1, textureIds, 0);
+        createTexture(bitmap, 0);
+    }
+
     public Texture(int[] Ids) {
         textureIds = new int[Ids.length];
         final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -55,7 +61,7 @@ public class Texture {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
 
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, bitmap, 0);
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
         GLES20.glBindTexture(GL_TEXTURE_2D, 0);
     }
 

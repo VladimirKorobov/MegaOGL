@@ -40,6 +40,9 @@ public class RemoteControl {
     public float[] buttonCoord;
     public float[] buttonViewCoord;
 
+    float width;
+    float height;
+
     public RemoteControl() {
     }
 
@@ -80,7 +83,7 @@ public class RemoteControl {
         Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
         Matrix.multiplyMM(panelMatrix, 0, panelOrthoMatrix, 0, panelMatrix, 0);
     }
-    private void createButtom() {
+    private void createButton() {
         buttonTex = new Texture(R.drawable.button2);
         float[] vert = new float[] {
                 -1, 1, 0, 0, 0,
@@ -98,20 +101,10 @@ public class RemoteControl {
         Renderer.createBuffers(buffers);
     }
 
-    private void createDigits() {
-        Bitmap bitmap = BitmapFactory.decodeResource(
-                MainActivity.appContext.getResources(), digitId[0], null);
-        digitWidth = bitmap.getWidth();
-        digitHeight = bitmap.getHeight();
-        bitmap.recycle();
-
-        digitsTex = new Texture(digitId);
-    }
-
     public void initialize() {
         shader =  new ShaderCtrl();
         createMatrix();
-        createButtom();
+        createButton();
     }
 
     public static final int SPEED_UP = 0;
@@ -121,23 +114,10 @@ public class RemoteControl {
     public static final int DIR_LEFT = 4;
     public static final int DIR_RIGHT = 5;
 
-    private static final int[] digitId = {
-            R.drawable.digit0,
-            R.drawable.digit1,
-            R.drawable.digit2,
-            R.drawable.digit3,
-            R.drawable.digit4,
-            R.drawable.digit5,
-            R.drawable.digit6,
-            R.drawable.digit7,
-            R.drawable.digit8,
-            R.drawable.digit9,
-            R.drawable.digitp
-    };
-
-
     public void sizeChanged(float width, float height) {
         float factor = (float)width / height;
+        this.width = width;
+        this.height = height;
         final float[] coord = new float[] {
                 1 * buttonSize - factor, 2 * buttonSize, // 0, speed up
                 1 * buttonSize - factor, 3 * buttonSize - 1, // 1, speed down
@@ -157,13 +137,7 @@ public class RemoteControl {
         buttonViewCoord = coordInView;
         buttonViewSize = buttonSize * height;
     }
-    private void drawNumber(float number, int precision, float x, float y) {
-        String s = String.format("%.2f", number);
-        float scale = digitWidth / digitHeight;
-        for(char ch: s.toCharArray()) {
-            int textureId = ch - '0';
-        }
-    }
+
     public void drawPanel() {
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
@@ -275,7 +249,8 @@ public class RemoteControl {
         Matrix.setLookAtM(mViewMatrix, 0, pos.x, pos.y, pos.z, look.x, look.y, look.z, up.x, up.y, up.z);
     }
     void draw() {
-
-
+        drawPanel();
+        String speedString = String.format("%.2f", speed);
+        Text.drawText(panelMatrix,speedString, 0, 0, 200, width, height);
     }
 }

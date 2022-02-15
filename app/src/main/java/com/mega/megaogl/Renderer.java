@@ -93,6 +93,7 @@ public class Renderer implements GLSurfaceView.Renderer {
         Matrix.setIdentityM(mModelMatrix, 0);
 
         remoteControl.initialize();
+        Text.generateFontBitmap();
 
         // Update model matrices
         solarSystem.draw(mModelMatrix, null, null);
@@ -131,9 +132,9 @@ public class Renderer implements GLSurfaceView.Renderer {
         shader.setLight(lightDir);
 
         shader.use();
-        solarSystem.draw(mModelMatrix, remoteControl.mViewMatrix, mProjectionMatrix);
 
-        remoteControl.drawPanel();
+        solarSystem.draw(mModelMatrix, remoteControl.mViewMatrix, mProjectionMatrix);
+        remoteControl.draw();
         remoteControl.update();
 
         //camera.update();
